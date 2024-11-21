@@ -1,0 +1,58 @@
+<assembly>
+    <formats>
+        <format>zip</format>
+    </formats>
+
+    <fileSets>
+        <fileSet>
+            <directory>src</directory>
+            <outputDirectory>src</outputDirectory>
+            <includes>
+                <include>**/*.java</include>
+            </includes>
+        </fileSet>
+
+        <fileSet>
+            <directory>src/main/resources</directory>
+            <outputDirectory>resources</outputDirectory>
+            <includes>
+                <include>**/*</include>
+            </includes>
+        </fileSet>
+
+        <fileSet>
+            <directory>target/classes</directory>
+            <outputDirectory>classes</outputDirectory>
+            <includes>
+                <include>**/*.class</include>
+            </includes>
+        </fileSet>
+
+        <fileSet>
+            <directory>documents</directory>
+            <outputDirectory>documents</outputDirectory>
+            <includes>
+                <include>**/*</include>
+            </includes>
+        </fileSet>
+
+        <fileSet>
+            <directory>./</directory>
+            <outputDirectory>/</outputDirectory>
+            <fileMode>755</fileMode>
+            <includes>
+                <include>TeamStart.sh</include>
+                <include>TeamStart.bat</include>
+            </includes>
+        </fileSet>
+    </fileSets>
+
+    <dependencySets>
+        <dependencySet>
+            <outputDirectory>lib</outputDirectory>
+            <useProjectArtifact>false</useProjectArtifact>
+            <unpack>false</unpack>
+            <scope>runtime</scope>
+        </dependencySet>
+    </dependencySets>
+</assembly>
