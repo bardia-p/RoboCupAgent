@@ -11,12 +11,12 @@ if "%mode%"=="debug" (
     set "class_path=classes"
 )
 
-set "path_1=%mode%;resources;lib\*"
+set "path_1=%class_path%;resources;lib\*"
 set "className_1=org.example.RoboCupAgent"
 set "team_1=Carleton"
 
-set "path_2=classes;resources;lib\*"         :: change this to the path of your agent's directory.
-set "className_2=org.example.RoboCupAgent"   :: change this to your agent's main class.
+set "path_2=%class_path%;resources;lib\*"         :: change this to the path of your agent's directory.
+set "className_2=org.example.RoboCupAgent"        :: change this to your agent's main class.
 set "team_2=University"
 
 set "num_players=5"
