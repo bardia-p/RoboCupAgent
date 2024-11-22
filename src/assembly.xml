@@ -13,8 +13,8 @@
         </fileSet>
 
         <fileSet>
-            <directory>src/main/resources</directory>
-            <outputDirectory>resources</outputDirectory>
+            <directory>ASL</directory>
+            <outputDirectory>ASL</outputDirectory>
             <includes>
                 <include>**/*</include>
             </includes>
@@ -24,7 +24,7 @@
             <directory>target/classes</directory>
             <outputDirectory>classes</outputDirectory>
             <includes>
-                <include>**/*.class</include>
+                <include>**/*</include>
             </includes>
         </fileSet>
 

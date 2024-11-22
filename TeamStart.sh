@@ -2,7 +2,7 @@
 
 mode=${1:-"deploy"}
 
-echo "Mode: $debug"
+echo "Mode: $mode"
 
 if [ "$mode" = "debug" ]; then
   class_path="target/classes"
@@ -10,12 +10,12 @@ else
   class_path="classes"
 fi
 
-path_1="$class_path:resources:lib/*"
+path_1="$class_path:ASL:lib/*"
 className_1="org.example.RoboCupAgent"
 team_1="Carleton"
 
-path_2="$class_path:resources:lib/*"         # change this to the path of your agent's directory.
-className_2="org.example.RoboCupAgent"       # change this to your agent's main class.
+path_2="$class_path:ASL:lib/*"             # change this to the path of your agent's directory.
+className_2="org.example.RoboCupAgent"     # change this to your agent's main class.
 team_2="University"
 
 num_players=5

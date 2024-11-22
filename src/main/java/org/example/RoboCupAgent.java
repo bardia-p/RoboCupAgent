@@ -21,7 +21,6 @@ import java.net.*;
 import java.util.*;
 import java.util.regex.*;
 
-
 //***************************************************************************
 //
 //	This is main object class
@@ -85,8 +84,7 @@ class RoboCupAgent implements SendCommand {
             return;
         }
 
-        RoboCupAgent player = new RoboCupAgent(InetAddress.getByName(hostName),
-                port, team);
+        RoboCupAgent player = new RoboCupAgent(InetAddress.getByName(hostName), port, team);
 
         // enter main loop
         player.mainLoop();
@@ -193,6 +191,9 @@ class RoboCupAgent implements SendCommand {
                 m.group(1).charAt(0),
                 Integer.parseInt(m.group(2)),
                 m.group(3));
+
+        Thread brainThread = new Thread((Runnable) m_brain);
+        brainThread.start();
     }
 
 
