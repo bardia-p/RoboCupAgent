@@ -38,7 +38,9 @@ class Brain extends AgArch implements Runnable, SensorInput {
 
     private Logger logger;
 
-    public final static String AGENT_FILE = "ASL/brain.asl";
+    public final static String AGENT_FILE = "resources/brain.asl";
+    public final static String LOGGING_FILE = "resources/logging.properties";
+
 
     //---------------------------------------------------------------------------
     // This constructor:
@@ -57,7 +59,7 @@ class Brain extends AgArch implements Runnable, SensorInput {
         m_number = number;
         m_playMode = playMode;
 
-        new RunLocalMAS().setupLogger();
+        new RunLocalMAS().setupLogger(LOGGING_FILE);
 
         logger = Logger.getLogger(m_team + "#" + m_number);
 
@@ -67,6 +69,7 @@ class Brain extends AgArch implements Runnable, SensorInput {
             new TransitionSystem(ag, null, null, this);
             ag.initAg();
             ag.loadInitialAS(AGENT_FILE);
+            getAgName();
         } catch (Exception e) {
             logger.log(Level.SEVERE, "Could not setup the agent!", e);
         }
@@ -135,7 +138,7 @@ class Brain extends AgArch implements Runnable, SensorInput {
     // this method get the agent actions
     @Override
     public void act(ActionExec action) {
-        logger.info("Agent " + getAgName() + " is doing: " + action.getActionTerm());
+        getTS().getLogger().info("Agent " + getAgName() + " is doing: " + action.getActionTerm());
         // set that the execution was ok
         action.setResult(true);
         actionExecuted(action);
@@ -149,6 +152,11 @@ class Brain extends AgArch implements Runnable, SensorInput {
     @Override
     public boolean isRunning() {
         return !m_timeOver;
+    }
+
+    @Override
+    public String getAgName() {
+        return m_team + "#" + m_number;
     }
 
     // a very simple implementation of sleep
