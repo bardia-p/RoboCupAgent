@@ -114,14 +114,14 @@ class Brain extends AgArch implements Runnable, SensorInput {
             while (isRunning()) {
                 // calls the Jason engine to perform one reasoning cycle
                 logger.fine("Reasoning....");
-                try {
-                    Thread.sleep(2000);
-                } catch (Exception e) {
-                    System.out.print(e);
-                }
+//                try {
+//                    Thread.sleep(2000);
+//                } catch (Exception e) {
+//                    System.out.print(e);
+//                }
                 getTS().reasoningCycle();
 
-                if (getTS().canSleep()) {
+                if (canSleep()) {
                     getTS().getLogger().info("Agent sleep" );
                     actionPerformed = false;
                     sleep();
@@ -198,7 +198,7 @@ class Brain extends AgArch implements Runnable, SensorInput {
 
     @Override
     public boolean canSleep() {
-        return true;
+        return actionPerformed;
     }
 
     @Override
