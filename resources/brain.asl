@@ -1,0 +1,1 @@
++ball_not_in_view(X) : true <- look_for_ball.

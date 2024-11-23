@@ -40,8 +40,6 @@ class Brain extends AgArch implements Runnable, SensorInput {
 
     public final static String AGENT_FILE = "resources/brain.asl";
     public final static String LOGGING_FILE = "resources/logging.properties";
-
-
     //---------------------------------------------------------------------------
     // This constructor:
     // - stores connection to the agent
@@ -70,6 +68,7 @@ class Brain extends AgArch implements Runnable, SensorInput {
             ag.initAg();
             ag.loadInitialAS(AGENT_FILE);
             getAgName();
+
         } catch (Exception e) {
             logger.log(Level.SEVERE, "Could not setup the agent!", e);
         }
@@ -131,7 +130,12 @@ class Brain extends AgArch implements Runnable, SensorInput {
     @Override
     public List<Literal> perceive() {
         List<Literal> l = new ArrayList<Literal>();
-        l.add(Literal.parseLiteral("x(10)"));
+
+        if ( null == getBall() )
+        {
+            l.add(Literal.parseLiteral("ball_not_in_view(" + getAgName() + ")"));
+        }
+
         return l;
     }
 
@@ -139,6 +143,16 @@ class Brain extends AgArch implements Runnable, SensorInput {
     @Override
     public void act(ActionExec action) {
         getTS().getLogger().info("Agent " + getAgName() + " is doing: " + action.getActionTerm());
+
+        String actionToDo = action.getActionTerm().toString();
+        switch ( actionToDo )
+        {
+            case "look_for_ball":
+                m_agent.turn(40);
+                break;
+            default:
+        }
+
         // set that the execution was ok
         action.setResult(true);
         actionExecuted(action);
@@ -156,7 +170,7 @@ class Brain extends AgArch implements Runnable, SensorInput {
 
     @Override
     public String getAgName() {
-        return m_team + "#" + m_number;
+        return m_team + m_number; //Jason parser hates # character
     }
 
     // a very simple implementation of sleep
