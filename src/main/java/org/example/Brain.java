@@ -31,6 +31,7 @@ class Brain extends AgArch implements Runnable, SensorInput {
     private final SendCommand m_agent;          // robot which is controlled by this brain
     private final Memory m_memory;                // place where all information is stored
     private final String m_team;
+    private final RoboCupAgent.PlayerType m_playerType;
     private final char m_side;
     private final int m_number;
     private volatile boolean m_timeOver;
@@ -39,7 +40,7 @@ class Brain extends AgArch implements Runnable, SensorInput {
     private boolean actionPerformed;
     private Logger logger;
 
-    public final static String AGENT_FILE = "resources/brain.asl";
+    public static String AGENT_FILE = "";
     public final static String LOGGING_FILE = "resources/logging.properties";
     //---------------------------------------------------------------------------
     // This constructor:
@@ -47,6 +48,7 @@ class Brain extends AgArch implements Runnable, SensorInput {
     // - starts thread for this object
     public Brain(SendCommand agent,
                  String team,
+                 RoboCupAgent.PlayerType playerType,
                  char side,
                  int number,
                  String playMode) {
@@ -54,6 +56,7 @@ class Brain extends AgArch implements Runnable, SensorInput {
         m_agent = agent;
         m_memory = new Memory();
         m_team = team;
+        m_playerType = playerType;
         m_side = side;
         m_number = number;
         m_playMode = playMode;
@@ -62,6 +65,15 @@ class Brain extends AgArch implements Runnable, SensorInput {
         new RunLocalMAS().setupLogger(LOGGING_FILE);
 
         logger = Logger.getLogger(m_team + m_number);
+
+        if ( m_playerType.equals(RoboCupAgent.PlayerType.GOALIE) )
+        {
+            AGENT_FILE = "resources/goalie.asl";
+        }
+        else
+        {
+            AGENT_FILE = "resources/brain.asl";
+        }
 
         // set up the Jason agent
         try {
@@ -107,19 +119,31 @@ class Brain extends AgArch implements Runnable, SensorInput {
         ObjectInfo object;
 
         // first put it somewhere on my side
-        if (Pattern.matches("^before_kick_off.*", m_playMode))
-            m_agent.move(-Math.random() * 52.5, 34 - Math.random() * 68.0);
+
+        if (Pattern.matches("^before_kick_off.*", m_playMode)) {
+            if ( m_playerType.equals(RoboCupAgent.PlayerType.GOALIE) ) {
+                m_agent.move(-50, 0);
+            }
+            else
+            {
+                m_agent.move(-Math.random() * 52.5, 34 - Math.random() * 68.0);
+            }
+        }
 
         try {
             while (isRunning()) {
                 // calls the Jason engine to perform one reasoning cycle
                 logger.fine("Reasoning....");
+
+                getTS().reasoningCycle();
+
 //                try {
 //                    Thread.sleep(2000);
-//                } catch (Exception e) {
+//                }
+//                catch (Exception e)
+//                {
 //                    System.out.print(e);
 //                }
-                getTS().reasoningCycle();
 
                 if (canSleep()) {
                     getTS().getLogger().info("Agent sleep" );
@@ -155,6 +179,26 @@ class Brain extends AgArch implements Runnable, SensorInput {
                 getTS().getLogger().info("Agent in ball direction" );
                 l.add(Literal.parseLiteral("in_ball_direction(" + getAgName() + ")"));
             }
+            else
+            {
+                l.add(Literal.parseLiteral("~in_ball_direction(" + this.getAgName() + ")"));
+            }
+
+            if ( ball.getDistance() <=  6.0)
+            {
+                l.add(Literal.parseLiteral("ball_close(" + this.getAgName() + ")"));
+            }
+            else {
+                l.add(Literal.parseLiteral("~ball_close(" + this.getAgName() + ")"));
+            }
+
+            if ( ball.getDistance() <=  1.0)
+            {
+                l.add(Literal.parseLiteral("ball_kickable(" + this.getAgName() + ")"));
+            }
+            else {
+                l.add(Literal.parseLiteral("~ball_kickable(" + this.getAgName() + ")"));
+            }
         }
         else
         {
@@ -175,17 +219,23 @@ class Brain extends AgArch implements Runnable, SensorInput {
 
         switch ( actionToDo )
         {
-            case "look_for_ball":
+            case "find_ball_act":
                 m_agent.turn(40);
                 break;
-            case "face_ball":
+            case "turn_to_ball_act":
                 getTS().getLogger().info("Ball direction " + ball.m_direction);
 
                 m_agent.turn(ball.m_direction);
 
                 break;
-            case "run_to_ball":
-                m_agent.dash(10*ball.m_distance);
+            case "wait_act":
+                m_agent.turn(0);
+                break;
+            case "dash_to_ball_act":
+                m_agent.dash(10*ball.getDirection());
+                break;
+            case "kick_random_act":
+                m_agent.kick(100, 90);
                 break;
             default:
         }
