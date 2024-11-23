@@ -36,6 +36,7 @@ class Brain extends AgArch implements Runnable, SensorInput {
     private volatile boolean m_timeOver;
     private final String m_playMode;
 
+    private boolean actionPerformed;
     private Logger logger;
 
     public final static String AGENT_FILE = "resources/brain.asl";
@@ -56,10 +57,11 @@ class Brain extends AgArch implements Runnable, SensorInput {
         m_side = side;
         m_number = number;
         m_playMode = playMode;
+        actionPerformed = false;
 
         new RunLocalMAS().setupLogger(LOGGING_FILE);
 
-        logger = Logger.getLogger(m_team + "#" + m_number);
+        logger = Logger.getLogger(m_team + m_number);
 
         // set up the Jason agent
         try {
@@ -112,10 +114,21 @@ class Brain extends AgArch implements Runnable, SensorInput {
             while (isRunning()) {
                 // calls the Jason engine to perform one reasoning cycle
                 logger.fine("Reasoning....");
+                try {
+                    Thread.sleep(2000);
+                } catch (Exception e) {
+                    System.out.print(e);
+                }
                 getTS().reasoningCycle();
 
-                if (getTS().canSleep())
+                if (getTS().canSleep()) {
+                    getTS().getLogger().info("Agent sleep" );
+                    actionPerformed = false;
                     sleep();
+                }
+                else {
+                    getTS().getLogger().info("Agent cannot sleep" );
+                }
             }
         } catch (Exception e) {
             logger.log(Level.SEVERE, "Run error", e);
@@ -132,10 +145,20 @@ class Brain extends AgArch implements Runnable, SensorInput {
     public List<Literal> perceive() {
         getTS().getLogger().info("Agent " + getAgName() + " is perceiving..." );
         List<Literal> l = new ArrayList<Literal>();
+        BallInfo ball = getBall();
 
-        if ( null != getBall() )
+        if ( null != ball )
         {
             l.add(Literal.parseLiteral("ball_in_view(" + getAgName() + ")"));
+            if ( ball.m_direction == 0 )
+            {
+                getTS().getLogger().info("Agent in ball direction" );
+                l.add(Literal.parseLiteral("in_ball_direction(" + getAgName() + ")"));
+            }
+        }
+        else
+        {
+            l.add(Literal.parseLiteral("~ball_in_view(" + getAgName() + ")"));
         }
 
 
@@ -148,15 +171,27 @@ class Brain extends AgArch implements Runnable, SensorInput {
         getTS().getLogger().info("Agent " + getAgName() + " is doing: " + action.getActionTerm());
 
         String actionToDo = action.getActionTerm().toString();
+        BallInfo ball = getBall();
+
         switch ( actionToDo )
         {
             case "look_for_ball":
                 m_agent.turn(40);
                 break;
+            case "face_ball":
+                getTS().getLogger().info("Ball direction " + ball.m_direction);
+
+                m_agent.turn(ball.m_direction);
+
+                break;
+            case "run_to_ball":
+                m_agent.dash(10*ball.m_distance);
+                break;
             default:
         }
 
         // set that the execution was ok
+        actionPerformed = true;
         action.setResult(true);
         actionExecuted(action);
     }
