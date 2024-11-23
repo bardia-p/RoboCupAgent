@@ -113,6 +113,7 @@ class Brain extends AgArch implements Runnable, SensorInput {
                 // calls the Jason engine to perform one reasoning cycle
                 logger.fine("Reasoning....");
                 getTS().reasoningCycle();
+
                 if (getTS().canSleep())
                     sleep();
             }
@@ -129,12 +130,14 @@ class Brain extends AgArch implements Runnable, SensorInput {
     // this method just add some perception for the agent
     @Override
     public List<Literal> perceive() {
+        getTS().getLogger().info("Agent " + getAgName() + " is perceiving..." );
         List<Literal> l = new ArrayList<Literal>();
 
-        if ( null == getBall() )
+        if ( null != getBall() )
         {
-            l.add(Literal.parseLiteral("ball_not_in_view(" + getAgName() + ")"));
+            l.add(Literal.parseLiteral("ball_in_view(" + getAgName() + ")"));
         }
+
 
         return l;
     }
