@@ -13,7 +13,7 @@
         </fileSet>
 
         <fileSet>
-            <directory>src/main/resources</directory>
+            <directory>resources</directory>
             <outputDirectory>resources</outputDirectory>
             <includes>
                 <include>**/*</include>
@@ -22,7 +22,7 @@
 
         <fileSet>
             <directory>target/classes</directory>
-            <outputDirectory>classes</outputDirectory>
+            <outputDirectory>target/classes</outputDirectory>
             <includes>
                 <include>**/*.class</include>
             </includes>

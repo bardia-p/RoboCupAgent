@@ -8,7 +8,7 @@ path_2="target/classes:ASL:lib/*"                 # change this to the path of y
 className_2="org.example.RoboCupAgent"     # change this to your agent's main class.
 team_2="University"
 
-num_players=5
+num_players=1
 
 kill_all_tasks() {
   echo "Killing all Java processes..."

@@ -11,26 +11,69 @@
 package org.example;
 
 import java.lang.Math;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import java.util.regex.*;
 
-class Brain extends Thread implements SensorInput {
+import jason.architecture.AgArch;
+import jason.asSemantics.Agent;
+import jason.asSemantics.TransitionSystem;
+import jason.asSyntax.Literal;
+import jason.asSemantics.ActionExec;
+import jason.infra.local.RunLocalMAS;
+
+class Brain extends AgArch implements Runnable, SensorInput {
+
+    //===========================================================================
+    // Private members
+    private final SendCommand m_agent;          // robot which is controlled by this brain
+    private final Memory m_memory;                // place where all information is stored
+    private final String m_team;
+    private final char m_side;
+    private final int m_number;
+    private volatile boolean m_timeOver;
+    private final String m_playMode;
+
+    private Logger logger;
+
+    public final static String AGENT_FILE = "resources/brain.asl";
+    public final static String LOGGING_FILE = "resources/logging.properties";
     //---------------------------------------------------------------------------
     // This constructor:
-    // - stores connection to krislet
+    // - stores connection to the agent
     // - starts thread for this object
-    public Brain(SendCommand krislet,
+    public Brain(SendCommand agent,
                  String team,
                  char side,
                  int number,
                  String playMode) {
         m_timeOver = false;
-        m_krislet = krislet;
+        m_agent = agent;
         m_memory = new Memory();
-        //m_team = team;
+        m_team = team;
         m_side = side;
-        // m_number = number;
+        m_number = number;
         m_playMode = playMode;
-        start();
+
+        new RunLocalMAS().setupLogger(LOGGING_FILE);
+
+        logger = Logger.getLogger(m_team + "#" + m_number);
+
+        // set up the Jason agent
+        try {
+            Agent ag = new Agent();
+            new TransitionSystem(ag, null, null, this);
+            ag.initAg();
+            ag.loadInitialAS(AGENT_FILE);
+            getAgName();
+
+        } catch (Exception e) {
+            logger.log(Level.SEVERE, "Could not setup the agent!", e);
+        }
+
+        getTS().getLogger().info("IM HERE");
     }
 
 
@@ -63,55 +106,106 @@ class Brain extends Thread implements SensorInput {
 
         // first put it somewhere on my side
         if (Pattern.matches("^before_kick_off.*", m_playMode))
-            m_krislet.move(-Math.random() * 52.5, 34 - Math.random() * 68.0);
+            m_agent.move(-Math.random() * 52.5, 34 - Math.random() * 68.0);
 
-        while (!m_timeOver) {
-            object = m_memory.getObject("ball");
-            if (object == null) {
-                // If you don't know where is ball then find it
-                m_krislet.turn(40);
-                m_memory.waitForNewInfo();
-            } else if (object.m_distance > 1.0) {
-                // If ball is too far then
-                // turn to ball or
-                // if we have correct direction then go to ball
-                if (object.m_direction != 0)
-                    m_krislet.turn(object.m_direction);
-                else
-                    m_krislet.dash(10 * object.m_distance);
-            } else {
-                // We know where is ball, and we can kick it
-                // so look for goal
-                if (m_side == 'l')
-                    object = m_memory.getObject("goal r");
-                else
-                    object = m_memory.getObject("goal l");
+        try {
+            while (isRunning()) {
+                // calls the Jason engine to perform one reasoning cycle
+                logger.fine("Reasoning....");
+                getTS().reasoningCycle();
 
-                if (object == null) {
-                    m_krislet.turn(40);
-                    m_memory.waitForNewInfo();
-                } else
-                    m_krislet.kick(100, object.m_direction);
+                if (getTS().canSleep())
+                    sleep();
             }
-
-            // sleep one step to ensure that we will not send
-            // two commands in one cycle.
-            try {
-                Thread.sleep(2 * SoccerParams.simulator_step);
-            } catch (Exception e) {
-                throw new RuntimeException(e);
-            }
+        } catch (Exception e) {
+            logger.log(Level.SEVERE, "Run error", e);
         }
-        m_krislet.bye();
+
+        m_agent.bye();
     }
 
 
     //===========================================================================
     // Here are suporting functions for implement logic
+    // this method just add some perception for the agent
+    @Override
+    public List<Literal> perceive() {
+        getTS().getLogger().info("Agent " + getAgName() + " is perceiving..." );
+        List<Literal> l = new ArrayList<Literal>();
 
+        if ( null != getBall() )
+        {
+            l.add(Literal.parseLiteral("ball_in_view(" + getAgName() + ")"));
+        }
+
+
+        return l;
+    }
+
+    // this method get the agent actions
+    @Override
+    public void act(ActionExec action) {
+        getTS().getLogger().info("Agent " + getAgName() + " is doing: " + action.getActionTerm());
+
+        String actionToDo = action.getActionTerm().toString();
+        switch ( actionToDo )
+        {
+            case "look_for_ball":
+                m_agent.turn(40);
+                break;
+            default:
+        }
+
+        // set that the execution was ok
+        action.setResult(true);
+        actionExecuted(action);
+    }
+
+    @Override
+    public boolean canSleep() {
+        return true;
+    }
+
+    @Override
+    public boolean isRunning() {
+        return !m_timeOver;
+    }
+
+    @Override
+    public String getAgName() {
+        return m_team + m_number; //Jason parser hates # character
+    }
+
+    // a very simple implementation of sleep
+    public void sleep() {
+        // sleep one step to ensure that we will not send
+        // two commands in one cycle.
+        try {
+            Thread.sleep(2 * SoccerParams.simulator_step);
+        } catch (Exception e) {
+            logger.log(Level.SEVERE, "Run error", e);
+            throw new RuntimeException(e);
+        }
+    }
 
     //===========================================================================
     // Implementation of SensorInput Interface
+    /**
+     * Returns the ball if present.
+     * @return ball info, if not null
+     */
+    private BallInfo getBall(){
+        return (BallInfo) m_memory.getObject("ball");
+    }
+
+    /**
+     * Returns the opponent's goal if present.
+     * @return opponent's goal info, if not null
+     */
+    private GoalInfo getOpponentGoal(){
+        char opponent_side = (m_side == 'l') ? 'r' : 'l';
+        return (GoalInfo) m_memory.getObject("goal " + opponent_side);
+    }
 
     //---------------------------------------------------------------------------
     // This function sends see information
@@ -130,16 +224,5 @@ class Brain extends Thread implements SensorInput {
     public void hear(int time, String message) {
         if (message.compareTo("time_over") == 0)
             m_timeOver = true;
-
     }
-
-
-    //===========================================================================
-    // Private members
-    private SendCommand m_krislet;          // robot which is controlled by this brain
-    private Memory m_memory;                // place where all information is stored
-    private char m_side;
-    volatile private boolean m_timeOver;
-    private String m_playMode;
-
 }
