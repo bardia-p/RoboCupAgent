@@ -234,9 +234,14 @@ class VisualInfo {
                     }
                 }
                 String flagType = "flag";
+//                System.out.println("type " + type);
+//                System.out.println("pos1 " + pos1);
+//                System.out.println("pos2 " + pos2);
+//                System.out.println("num " + num);
                 if (type != ' ') flagType = flagType + " " + type;
                 if (pos1 != ' ') flagType = flagType + " " + pos1;
                 if (pos2 != ' ') flagType = flagType + " " + pos2;
+                flagType += " " + num;
                 // Implementing flags like this, allows one to specifically find a
                 // particular flag (i.e. "flag c", or "flag p l t")
                 objInfo = new FlagInfo(flagType, type, pos1, pos2, num, out);
