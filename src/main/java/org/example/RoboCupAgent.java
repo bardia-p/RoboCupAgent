@@ -165,6 +165,13 @@ class RoboCupAgent implements SendCommand {
     }
 
     //---------------------------------------------------------------------------
+    // This function sends a catch command to the server
+    public void catchBall(float direction) {
+        send("(catch " + direction + ")");
+    }
+
+
+    //---------------------------------------------------------------------------
     // This function sends say command to the server
     public void say(String message) {
         send("(say " + message + ")");
