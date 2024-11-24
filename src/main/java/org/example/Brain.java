@@ -169,40 +169,36 @@ class Brain extends AgArch implements Runnable, SensorInput {
     public List<Literal> perceive() {
         getTS().getLogger().info("Agent " + getAgName() + " is perceiving..." );
         List<Literal> l = new ArrayList<Literal>();
+        l.add(Literal.parseLiteral("~ball_in_view(" + getAgName() + ")"));
+        l.add(Literal.parseLiteral("~in_ball_direction(" + this.getAgName() + ")"));
+        l.add(Literal.parseLiteral("~ball_close(" + this.getAgName() + ")"));
+        l.add(Literal.parseLiteral("~ball_kickable(" + this.getAgName() + ")"));
+
+
         BallInfo ball = getBall();
 
         if ( null != ball )
         {
+            l.remove(Literal.parseLiteral("~ball_in_view(" + getAgName() + ")"));
             l.add(Literal.parseLiteral("ball_in_view(" + getAgName() + ")"));
             if ( ball.m_direction == 0 )
             {
                 getTS().getLogger().info("Agent in ball direction" );
+                l.remove(Literal.parseLiteral("~in_ball_direction(" + this.getAgName() + ")"));
                 l.add(Literal.parseLiteral("in_ball_direction(" + getAgName() + ")"));
             }
-            else
-            {
-                l.add(Literal.parseLiteral("~in_ball_direction(" + this.getAgName() + ")"));
-            }
 
-            if ( ball.getDistance() <=  6.0)
+            if ( ball.getDistance() <=  10)
             {
+                l.remove(Literal.parseLiteral("~ball_close(" + this.getAgName() + ")"));
                 l.add(Literal.parseLiteral("ball_close(" + this.getAgName() + ")"));
-            }
-            else {
-                l.add(Literal.parseLiteral("~ball_close(" + this.getAgName() + ")"));
             }
 
             if ( ball.getDistance() <=  1.0)
             {
+                l.remove(Literal.parseLiteral("~ball_kickable(" + this.getAgName() + ")"));
                 l.add(Literal.parseLiteral("ball_kickable(" + this.getAgName() + ")"));
             }
-            else {
-                l.add(Literal.parseLiteral("~ball_kickable(" + this.getAgName() + ")"));
-            }
-        }
-        else
-        {
-            l.add(Literal.parseLiteral("~ball_in_view(" + getAgName() + ")"));
         }
 
 
@@ -232,7 +228,7 @@ class Brain extends AgArch implements Runnable, SensorInput {
                 m_agent.turn(0);
                 break;
             case "dash_to_ball_act":
-                m_agent.dash(10*ball.getDirection());
+                m_agent.dash(10*ball.getDistance());
                 break;
             case "kick_random_act":
                 m_agent.kick(100, 90);

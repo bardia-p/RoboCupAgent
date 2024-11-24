@@ -29,12 +29,6 @@
 
 +!offensive_mode(X):
     ball_close(X) &
-    ~ball_in_view(X)
-    <-
-    !wait(X).
-
-+!offensive_mode(X):
-    ball_close(X) &
     ~ball_kickable(X)
     <-
     dash_to_ball_act;
