@@ -176,22 +176,22 @@ class Brain extends AgArch implements Runnable, SensorInput {
     public List<Literal> perceive() {
         getTS().getLogger().info("Agent " + getAgName() + " is perceiving..." );
         List<Literal> l = new ArrayList<Literal>();
-        l.add(Literal.parseLiteral("~ball_in_view"));
-        l.add(Literal.parseLiteral("~in_ball_direction"));
-        l.add(Literal.parseLiteral("~ball_direction_good"));
-        l.add(Literal.parseLiteral("~ball_close"));
-        l.add(Literal.parseLiteral("~ball_kickable"));
-        l.add(Literal.parseLiteral("~ball_angle_too_right"));
-        l.add(Literal.parseLiteral("~ball_angle_too_left"));
-        l.add(Literal.parseLiteral("~ball_angle_centre"));
-        l.add(Literal.parseLiteral("~right_goal_in_view"));
-        l.add(Literal.parseLiteral("~left_goal_in_view"));
-        l.add(Literal.parseLiteral("~within_right_goal"));
-        l.add(Literal.parseLiteral("~within_left_goal"));
-        l.add(Literal.parseLiteral("~own_goal_in_view"));
-        l.add(Literal.parseLiteral("~within_own_goal"));
-        l.add(Literal.parseLiteral("~centre_visible"));
-        l.add(Literal.parseLiteral("~within_centre"));
+//        l.add(Literal.parseLiteral("~ball_in_view"));
+//        l.add(Literal.parseLiteral("~in_ball_direction"));
+//        l.add(Literal.parseLiteral("~ball_direction_good"));
+//        l.add(Literal.parseLiteral("~ball_close"));
+//        l.add(Literal.parseLiteral("~ball_kickable"));
+//        l.add(Literal.parseLiteral("~ball_angle_too_right"));
+//        l.add(Literal.parseLiteral("~ball_angle_too_left"));
+//        l.add(Literal.parseLiteral("~ball_angle_centre"));
+//        l.add(Literal.parseLiteral("~right_goal_in_view"));
+//        l.add(Literal.parseLiteral("~left_goal_in_view"));
+//        l.add(Literal.parseLiteral("~within_right_goal"));
+//        l.add(Literal.parseLiteral("~within_left_goal"));
+//        l.add(Literal.parseLiteral("~own_goal_in_view"));
+//        l.add(Literal.parseLiteral("~within_own_goal"));
+//        l.add(Literal.parseLiteral("~centre_visible"));
+//        l.add(Literal.parseLiteral("~within_centre"));
 
         BallInfo ball = getBall();
         ObjectInfo rightFlag;
@@ -218,12 +218,12 @@ class Brain extends AgArch implements Runnable, SensorInput {
 
         if ( null != ball )
         {
-            l.remove(Literal.parseLiteral("~ball_in_view"));
+//            l.remove(Literal.parseLiteral("~ball_in_view"));
             l.add(Literal.parseLiteral("ball_in_view"));
             if ( ball.m_direction == 0 )
             {
                 getTS().getLogger().info("Agent in ball direction" );
-                l.remove(Literal.parseLiteral("~in_ball_direction"));
+//                l.remove(Literal.parseLiteral("~in_ball_direction"));
                 l.add(Literal.parseLiteral("in_ball_direction"));
 
                 boolean criticalFlagFound = false;
@@ -234,7 +234,7 @@ class Brain extends AgArch implements Runnable, SensorInput {
                     {
                         criticalFlagFound = true;
                         getTS().getLogger().info("ball angle bad" );
-                        l.remove(Literal.parseLiteral("~ball_angle_too_right"));
+//                        l.remove(Literal.parseLiteral("~ball_angle_too_right"));
                         l.add(Literal.parseLiteral("ball_angle_too_right"));
                     }
                 }
@@ -245,7 +245,7 @@ class Brain extends AgArch implements Runnable, SensorInput {
                     {
                         criticalFlagFound = true;
                         getTS().getLogger().info("ball angle bad" );
-                        l.remove(Literal.parseLiteral("~ball_angle_too_left"));
+//                        l.remove(Literal.parseLiteral("~ball_angle_too_left"));
                         l.add(Literal.parseLiteral("ball_angle_too_left"));
                     }
                 }
@@ -254,7 +254,7 @@ class Brain extends AgArch implements Runnable, SensorInput {
                 {
                     if ( Math.abs(centreOfMap.getDirection()) < 20 )
                     {
-                        l.remove(Literal.parseLiteral("~ball_angle_centre"));
+//                        l.remove(Literal.parseLiteral("~ball_angle_centre"));
                         l.add(Literal.parseLiteral("ball_angle_centre"));
                     }
                 }
@@ -262,19 +262,19 @@ class Brain extends AgArch implements Runnable, SensorInput {
 
             if ( Math.abs(ball.getDirection()) < 7.5  )
             {
-                l.remove(Literal.parseLiteral("~ball_direction_good"));
+//                l.remove(Literal.parseLiteral("~ball_direction_good"));
                 l.add(Literal.parseLiteral("ball_direction_good"));
             }
 
             if ( ball.getDistance() <=  10 )
             {
-                l.remove(Literal.parseLiteral("~ball_close"));
+//                l.remove(Literal.parseLiteral("~ball_close"));
                 l.add(Literal.parseLiteral("ball_close"));
             }
 
             if ( ball.getDistance() <=  1.0)
             {
-                l.remove(Literal.parseLiteral("~ball_kickable"));
+//                l.remove(Literal.parseLiteral("~ball_kickable"));
                 l.add(Literal.parseLiteral("ball_kickable"));
             }
 
@@ -282,48 +282,48 @@ class Brain extends AgArch implements Runnable, SensorInput {
 
         if ( rightFlag != null )
         {
-            l.remove(Literal.parseLiteral("~right_goal_in_view"));
+//            l.remove(Literal.parseLiteral("~right_goal_in_view"));
             l.add(Literal.parseLiteral("right_goal_in_view"));
             getTS().getLogger().info("right flag in view" );
             if ( rightFlag.getDistance() < 36 )
             {
                 getTS().getLogger().info("within right flag" );
-                l.remove(Literal.parseLiteral("~within_right_goal"));
+//                l.remove(Literal.parseLiteral("~within_right_goal"));
                 l.add(Literal.parseLiteral("within_right_goal"));
             }
         }
 
         if ( leftFlag != null )
         {
-            l.remove(Literal.parseLiteral("~left_goal_in_view"));
+//            l.remove(Literal.parseLiteral("~left_goal_in_view"));
             l.add(Literal.parseLiteral("left_goal_in_view"));
             getTS().getLogger().info("left flag in view" );
             if ( leftFlag.getDistance() < 36 )
             {
                 getTS().getLogger().info("within left flag" );
-                l.remove(Literal.parseLiteral("~within_left_goal"));
+//                l.remove(Literal.parseLiteral("~within_left_goal"));
                 l.add(Literal.parseLiteral("within_left_goal"));
             }
         }
 
         if ( null != ownGoal )
         {
-            l.remove(Literal.parseLiteral("~own_goal_in_view"));
+//            l.remove(Literal.parseLiteral("~own_goal_in_view"));
             l.add(Literal.parseLiteral("own_goal_in_view"));
             if ( ownGoal.getDistance() < 1.0 )
             {
-                l.remove(Literal.parseLiteral("~within_own_goal"));
+//                l.remove(Literal.parseLiteral("~within_own_goal"));
                 l.add(Literal.parseLiteral("within_own_goal"));
             }
         }
 
         if ( null != centreOfMap )
         {
-            l.remove(Literal.parseLiteral("~centre_visible"));
+//            l.remove(Literal.parseLiteral("~centre_visible"));
             l.add(Literal.parseLiteral("centre_visible"));
             if ( centreOfMap.getDistance() < 51 )
             {
-                l.remove(Literal.parseLiteral("~within_centre"));
+//                l.remove(Literal.parseLiteral("~within_centre"));
                 l.add(Literal.parseLiteral("within_centre"));
             }
         }
@@ -408,6 +408,7 @@ class Brain extends AgArch implements Runnable, SensorInput {
                 break;
             case "catch_ball_act":
                 m_agent.catchBall(ball.getDirection());
+//                m_agent.kick(120, 90);
                 break;
             default:
         }
