@@ -56,6 +56,11 @@ class Brain extends AgArch implements Runnable, SensorInput {
     public static final Double FIELD_LENGTH = 105.0;
     public static final Double FIELD_WIDTH = 68.0;
 
+    // These determine what fraction of the half field is used to measure the home zone.
+    public static final Double HOME_ZONE_FRACTION = 1.0 / 3.0;
+    public static final Double OPP_ZONE_FRACTION = 7.0 / 16.0;
+
+
     //---------------------------------------------------------------------------
     // This constructor:
     // - stores connection to the agent
@@ -348,22 +353,17 @@ class Brain extends AgArch implements Runnable, SensorInput {
         GoalInfo goal_opp = (GoalInfo) m_memory.getObject("goal " + opp_side);
         FlagInfo bottom_opp = (FlagInfo) m_memory.getObject("f " + opp_side + " b");
 
-        // Check the center flags
-        FlagInfo center = (FlagInfo) m_memory.getObject("f c");
-        FlagInfo top_center = (FlagInfo) m_memory.getObject("f c t");
-        FlagInfo bottom_center = (FlagInfo) m_memory.getObject("f c b");
-
         // If you can see home, and you are close to it!
-        if ((top_home != null && top_home.m_distance <= FIELD_LENGTH / 4) ||
-                (goal_home != null && goal_home.m_distance <= FIELD_LENGTH / 4) ||
-                (bottom_home != null && bottom_home.m_distance <= FIELD_LENGTH / 4)) {
+        if ((top_home != null && top_home.m_distance <= FIELD_LENGTH * HOME_ZONE_FRACTION) ||
+                (goal_home != null && goal_home.m_distance <= FIELD_LENGTH * HOME_ZONE_FRACTION) ||
+                (bottom_home != null && bottom_home.m_distance <= FIELD_LENGTH * HOME_ZONE_FRACTION)) {
             return 0;
         }
 
         // If you can see opposition, and you are close to it!
-        if ((top_opp != null && top_opp.m_distance <= FIELD_LENGTH / 2) ||
-                (goal_opp != null && goal_opp.m_distance <= FIELD_LENGTH / 2) ||
-                (bottom_opp != null && bottom_opp.m_distance <= FIELD_LENGTH / 2)) {
+        if ((top_opp != null && top_opp.m_distance <= FIELD_LENGTH * OPP_ZONE_FRACTION) ||
+                (goal_opp != null && goal_opp.m_distance <= FIELD_LENGTH * OPP_ZONE_FRACTION) ||
+                (bottom_opp != null && bottom_opp.m_distance <= FIELD_LENGTH * OPP_ZONE_FRACTION)) {
             return 1;
         }
 
