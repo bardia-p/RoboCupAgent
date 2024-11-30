@@ -30,6 +30,9 @@ interface SendCommand {
     // This function sends kick command to the server
     void kick(double power, double direction);
 
+    // This function sends a catch command to the server
+    void catchBall(float direction);
+
     // This function sends say command to the server
     void say(String message);
 

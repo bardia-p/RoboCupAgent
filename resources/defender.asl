@@ -15,7 +15,7 @@
     not(~in_home_zone) &
     ball_in_view &
     not aligned_with_ball &
-    not ball_close
+    not ball_kickable
     <-
     align_ball_act; !wait.
 
@@ -23,14 +23,14 @@
     not(~in_home_zone) &
     ball_in_view &
     aligned_with_ball &
-    not ball_close
+    not ball_kickable
     <-
     run_to_ball_act; !wait.
 
 +!wait:
     not(~in_home_zone) &
     ball_in_view &
-    ball_close &
+    ball_kickable &
     opp_goal_in_view
     <-
     kick_to_opp_goal_act; !wait.
@@ -38,7 +38,7 @@
 +!wait:
     not(~in_home_zone) &
     ball_in_view &
-    ball_close &
+    ball_kickable &
     not(opp_goal_in_view) &
     teammate_in_view
     <-
@@ -47,7 +47,7 @@
 +!wait:
     not(~in_home_zone) &
     ball_in_view &
-    ball_close &
+    ball_kickable &
     not(opp_goal_in_view) &
     not(teammate_in_view)
     <-

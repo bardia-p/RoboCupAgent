@@ -27,6 +27,7 @@ import java.util.regex.*;
 //
 //***************************************************************************
 class RoboCupAgent implements SendCommand {
+    // Some player types
     public enum PlayerType {ATTACKER, DEFENDER, GOALIE};
 
     //===========================================================================
@@ -55,6 +56,8 @@ class RoboCupAgent implements SendCommand {
         String hostName = "";
         int port = 6000;
         String team = "Reactive";
+
+        // Unless otherwise specified, player type is DEFENDER
         PlayerType playerType = PlayerType.DEFENDER;
 
         try {
@@ -164,6 +167,13 @@ class RoboCupAgent implements SendCommand {
     }
 
     //---------------------------------------------------------------------------
+    // This function sends a catch command to the server
+    public void catchBall(float direction) {
+        send("(catch " + direction + ")");
+    }
+
+
+    //---------------------------------------------------------------------------
     // This function sends say command to the server
     public void say(String message) {
         send("(say " + message + ")");
@@ -209,7 +219,8 @@ class RoboCupAgent implements SendCommand {
     //---------------------------------------------------------------------------
     // This function sends initialization command to the server
     private void init() {
-        send("(init " + m_team + " (version 9))");
+        String goaliePlayer = m_playerType.equals(PlayerType.GOALIE) ? " (goalie)" : "";
+        send("(init " + m_team + goaliePlayer + " (version 9))");
     }
 
     //---------------------------------------------------------------------------
@@ -291,7 +302,7 @@ class RoboCupAgent implements SendCommand {
     private final InetAddress m_host;            // Server address
     private int m_port;            // server port
     private final String m_team;            // team name
-    private final PlayerType m_playerType;            // player type
+    private final PlayerType m_playerType;            // team name
     private SensorInput m_brain;        // input for sensor information
     private boolean m_playing;              // controls the MainLoop
     private final Pattern message_pattern = Pattern.compile("^\\((\\w+?)\\s.*");
