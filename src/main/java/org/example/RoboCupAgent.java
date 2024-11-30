@@ -27,6 +27,9 @@ import java.util.regex.*;
 //
 //***************************************************************************
 class RoboCupAgent implements SendCommand {
+    // Some player types
+    public enum PlayerType {ATTACKER, DEFENDER, GOALIE};
+
     //===========================================================================
     // Initialization member functions
 
@@ -54,6 +57,9 @@ class RoboCupAgent implements SendCommand {
         int port = 6000;
         String team = "Reactive";
 
+        // Unless otherwise specified, player type is DEFENDER
+        PlayerType playerType = PlayerType.DEFENDER;
+
         try {
             // First look for parameters
             for (int c = 0; c < a.length; c += 2) {
@@ -63,6 +69,8 @@ class RoboCupAgent implements SendCommand {
                     port = Integer.parseInt(a[c + 1]);
                 } else if (a[c].compareTo("-team") == 0) {
                     team = a[c + 1];
+                } else if (a[c].compareTo("-playerType") == 0) {
+                    playerType = PlayerType.valueOf(a[c + 1].toUpperCase().strip());
                 } else {
                     throw new Exception();
                 }
@@ -84,7 +92,7 @@ class RoboCupAgent implements SendCommand {
             return;
         }
 
-        RoboCupAgent player = new RoboCupAgent(InetAddress.getByName(hostName), port, team);
+        RoboCupAgent player = new RoboCupAgent(InetAddress.getByName(hostName), port, team, playerType);
 
         // enter main loop
         player.mainLoop();
@@ -92,12 +100,13 @@ class RoboCupAgent implements SendCommand {
 
     //---------------------------------------------------------------------------
     // This constructor opens socket for  connection with server
-    public RoboCupAgent(InetAddress host, int port, String team)
+    public RoboCupAgent(InetAddress host, int port, String team, PlayerType playerType)
             throws SocketException {
         m_socket = new DatagramSocket();
         m_host = host;
         m_port = port;
         m_team = team;
+        m_playerType = playerType;
         m_playing = true;
     }
 
@@ -158,6 +167,13 @@ class RoboCupAgent implements SendCommand {
     }
 
     //---------------------------------------------------------------------------
+    // This function sends a catch command to the server
+    public void catchBall(float direction) {
+        send("(catch " + direction + ")");
+    }
+
+
+    //---------------------------------------------------------------------------
     // This function sends say command to the server
     public void say(String message) {
         send("(say " + message + ")");
@@ -188,6 +204,7 @@ class RoboCupAgent implements SendCommand {
         // initialize player's brain
         m_brain = new Brain(this,
                 m_team,
+                m_playerType,
                 m.group(1).charAt(0),
                 Integer.parseInt(m.group(2)),
                 m.group(3));
@@ -202,7 +219,8 @@ class RoboCupAgent implements SendCommand {
     //---------------------------------------------------------------------------
     // This function sends initialization command to the server
     private void init() {
-        send("(init " + m_team + " (version 9))");
+        String goaliePlayer = m_playerType.equals(PlayerType.GOALIE) ? " (goalie)" : "";
+        send("(init " + m_team + goaliePlayer + " (version 9))");
     }
 
     //---------------------------------------------------------------------------
@@ -284,6 +302,7 @@ class RoboCupAgent implements SendCommand {
     private final InetAddress m_host;            // Server address
     private int m_port;            // server port
     private final String m_team;            // team name
+    private final PlayerType m_playerType;            // team name
     private SensorInput m_brain;        // input for sensor information
     private boolean m_playing;              // controls the MainLoop
     private final Pattern message_pattern = Pattern.compile("^\\((\\w+?)\\s.*");
