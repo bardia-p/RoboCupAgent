@@ -16,18 +16,34 @@ in_centre_position.
 +!wait:
     not(ball_distance_catchable) &
     aligned_with_ball &
-    ball_to_goalie_angle_very_right &
+    ball_to_goalie_angle_right &
     not(in_right_position)
     <-
-    !find_right_goal.
+    !in_right_goal.
+
++!wait:
+    not(ball_distance_catchable) &
+    aligned_with_ball &
+    ball_to_goalie_angle_very_right &
+    not(in_very_right_position)
+    <-
+    !in_very_right_goal.
+
++!wait:
+    not(ball_distance_catchable) &
+    aligned_with_ball &
+    ball_to_goalie_angle_left &
+    not(in_left_position)
+    <-
+    !in_left_goal.
 
 +!wait:
     not(ball_distance_catchable) &
     aligned_with_ball &
     ball_to_goalie_angle_very_left &
-    not(in_left_position)
+    not(in_very_left_position)
     <-
-    !find_left_goal.
+    !in_very_left_goal.
 
 +!wait:
     not(ball_distance_catchable) &
@@ -40,9 +56,11 @@ in_centre_position.
 +!wait:
     not(ball_distance_catchable) &
     aligned_with_ball &
-    ( in_right_position |
+    ( in_very_right_position |
+    in_right_position |
     in_centre_position |
-    in_left_position )
+    in_left_position |
+    in_very_left_position )
     <-
     wait_act; !wait.
 
@@ -68,7 +86,7 @@ in_centre_position.
     ball_angle_catchable &
     not(ball_kickable)
     <-
-    run_to_ball_act;
+    run_to_ball_goalie_act;
     !offensive_mode.
 
 +!offensive_mode:
@@ -79,56 +97,128 @@ in_centre_position.
     align_ball_act;
     !offensive_mode.
 
-+!find_right_goal:
++!in_right_goal:
     not(flag_right_to_goal_in_view)
     <-
     find_right_goal_act;
-    !find_right_goal.
+    !in_right_goal.
 
-+!find_right_goal:
++!in_right_goal:
     flag_right_to_goal_in_view
     <-
     align_right_goal_act;
     !run_to_right_goal.
 
 +!run_to_right_goal:
-    not(within_very_right_of_goal)
+    not(within_right_of_goal)
     <-
-    run_to_right_goal_act;
+    run_to_right_goal_goalie_act;
     !run_to_right_goal.
 
 +!run_to_right_goal:
     within_very_right_of_goal
     <-
+    run_backwards_right_goal_goalie_act;
+    !run_to_right_goal.
+
++!run_to_right_goal:
+    within_right_of_goal
+    <-
     -in_centre_position;
     -in_left_position;
+    -in_very_left_position;
+    -in_very_right_position;
     +in_right_position;
     !wait.
 
-+!find_left_goal:
++!in_very_right_goal:
+    not(flag_right_to_goal_in_view)
+    <-
+    find_right_goal_act;
+    !in_very_right_goal.
+
++!in_very_right_goal:
+    flag_right_to_goal_in_view
+    <-
+    align_right_goal_act;
+    !run_to_very_right_goal.
+
++!run_to_very_right_goal:
+    not(within_very_right_of_goal)
+    <-
+    run_to_right_goal_goalie_act;
+    !run_to_very_right_goal.
+
++!run_to_very_right_goal:
+    within_very_right_of_goal
+    <-
+    -in_centre_position;
+    -in_right_position;
+    -in_left_position;
+    -in_very_left_position;
+    +in_very_right_position;
+    !wait.
+
++!in_left_goal:
     not(flag_left_to_goal_in_view)
     <-
     find_left_goal_act;
-    !find_left_goal.
+    !in_left_goal.
 
-+!find_left_goal:
++!in_left_goal:
     flag_left_to_goal_in_view
     <-
     align_left_goal_act;
     !run_to_left_goal.
 
 +!run_to_left_goal:
-    not(within_very_left_of_goal)
+    not(within_left_of_goal)
     <-
-    run_to_left_goal_act;
+    run_to_left_goal_goalie_act;
     !run_to_left_goal.
 
 +!run_to_left_goal:
     within_very_left_of_goal
     <-
+    run_backwards_left_goal_goalie_act;
+    !run_to_left_goal.
+
++!run_to_left_goal:
+    within_left_of_goal
+    <-
     -in_centre_position;
+    -in_very_left_position;
+    -in_very_right_position;
     -in_right_position;
     +in_left_position;
+    !wait.
+
++!in_very_left_goal:
+    not(flag_left_to_goal_in_view)
+    <-
+    find_left_goal_act;
+    !in_very_left_goal.
+
++!in_very_left_goal:
+    flag_left_to_goal_in_view
+    <-
+    align_left_goal_act;
+    !run_to_very_left_goal.
+
++!run_to_very_left_goal:
+    not(within_very_left_of_goal)
+    <-
+    run_to_left_goal_goalie_act;
+    !run_to_very_left_goal.
+
++!run_to_very_left_goal:
+    within_very_left_of_goal
+    <-
+    -in_centre_position;
+    -in_left_position;
+    -in_right_position;
+    -in_very_right_position;
+    +in_very_left_position;
     !wait.
 
 +!reset_centre:
@@ -157,7 +247,7 @@ in_centre_position.
     not(inside_own_goal) &
     own_goal_in_view
     <-
-    run_to_own_goal_act;
+    run_to_own_goal_goalie_act;
     !run_to_own_goal.
 
 +!run_to_own_goal:
@@ -180,13 +270,15 @@ in_centre_position.
 +!run_to_centre:
     not(goalie_distance_from_centre)
     <-
-    run_to_centre_act;
+    run_to_centre_goalie_act;
     !run_to_centre.
 
 +!run_to_centre:
     goalie_distance_from_centre
     <-
-    -in_right_position;
     -in_left_position;
+    -in_right_position;
+    -in_very_right_position;
+    -in_very_left_position;
     +in_centre_position;
     !wait.

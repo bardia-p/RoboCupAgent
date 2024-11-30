@@ -19,19 +19,27 @@ set "path_2=target\classes;ASL;lib\*"                    :: change this to the p
 set "className_2=org.example.RoboCupAgent"        :: change this to your agent's main class.
 set "team_2=University"
 
-set "num_players=5"
+set "num_goalies=1"
+set "num_defenders=2"
 
-for /L %%i in (1,1,%num_players%) do (
-    start java -cp "%path_1%" %className_1% -team %team_1%
+for /L %%i in (1,1,%num_goalies%) do (
+    start java -cp "%path_1%" %className_1% -team %team_1% -playerType Goalie
     ping localhost
 )
 
-for /L %%i in (1,1,%num_players%-1) do (
-    start java -cp "%path_2%" %className_2% -team %team_2%
+for /L %%i in (1,1,%num_defenders%) do (
+    start java -cp "%path_1%" %className_1% -team %team_1% -playerType Defender
     ping localhost
 )
 
-start java -cp "%path_2%" %className_2% -team %team_2%
-ping localhost
+for /L %%i in (1,1,%num_goalies%) do (
+    start java -cp "%path_2%" %className_2% -team %team_2% -playerType Goalie
+    ping localhost
+)
+
+for /L %%i in (1,1,%num_defenders%) do (
+    start java -cp "%path_1%" %className_1% -team %team_2% -playerType Defender
+    ping localhost
+)
 
 endlocal

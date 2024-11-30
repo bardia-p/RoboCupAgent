@@ -47,18 +47,22 @@ class Brain extends AgArch implements Runnable, SensorInput {
     public static final int KICK_POWER = 100;
     public static final double DASH_COEFFICIENT = 10.0;
     public static final double PASS_COEFFICIENT = 25.0;
+    public static final double GOALIE_DASH_POWER = 300.0;
+    public static final double GOALIE_DASH_ALIGNMENT_POWER = 100.0;
     public static final int SMALL_BROWSE_ANGLE = 40;
     public static final int LARGE_BROWSE_ANGLE = 90;
     public static final double KICKABLE_BALL_DISTANCE = 1.0;
     public static final double IN_GOAL_DISTANCE = 1.0;
+    public static final double GOALIE_BALL_RIGHT_ANGLE = -5;
     public static final double GOALIE_BALL_VERY_RIGHT_ANGLE = -20;
+    public static final double GOALIE_BALL_LEFT_ANGLE = 5;
     public static final double GOALIE_BALL_VERY_LEFT_ANGLE = 20;
     public static final double GOALIE_BALL_CLOSE_TO_CENTRE_ANGLE = 20;
     public static final double GOALIE_BALL_CATCHABLE_ANGLE = 7.5;
     public static final double GOALIE_BALL_CATCHABLE_DISTANCE = 10;
+    public static final double GOALIE_DISTANCE_EDGE_OF_GOAL = 37.5;
     public static final double GOALIE_DISTANCE_VERY_EDGE_OF_GOAL = 36;
-    public static final double GOALIE_DISTANCE_FROM_CENTRE = 51;
-
+    public static final double GOALIE_DISTANCE_FROM_CENTRE = 50;
 
     public static final String ATTACKER_FILE = "resources/attacker.asl";
     public static final String DEFENDER_FILE = "resources/defender.asl";
@@ -162,7 +166,7 @@ class Brain extends AgArch implements Runnable, SensorInput {
 //                } catch (Exception e) {
 //                    System.out.println(e);
 //                }
-
+//
 //                BeliefBase bb = getTS().getAg().getBB();
 //
 //                System.out.println("Agent Beliefs:");
@@ -255,33 +259,27 @@ class Brain extends AgArch implements Runnable, SensorInput {
             }
 
             // Goalie: check if ball is within an angle that requires position change
-            // We only want to preceive one such critical angles
-            boolean criticalFlagFound = false;
 
-            if ( criticalRightGoalFlag != null )
+
+            if ( criticalRightGoalFlag != null && criticalRightGoalFlag.getDirection() < GOALIE_BALL_VERY_RIGHT_ANGLE )
             {
-                if ( criticalRightGoalFlag.getDirection() < GOALIE_BALL_VERY_RIGHT_ANGLE )
-                {
-                    criticalFlagFound = true;
-                    l.add(Literal.parseLiteral("ball_to_goalie_angle_very_right"));
-                }
+                l.add(Literal.parseLiteral("ball_to_goalie_angle_very_right"));
             }
-
-            if ( criticalLeftGoalFlag != null && !criticalFlagFound )
+            else if ( criticalLeftGoalFlag != null && criticalLeftGoalFlag.getDirection() > GOALIE_BALL_VERY_LEFT_ANGLE )
             {
-                if ( criticalLeftGoalFlag.getDirection() > GOALIE_BALL_VERY_LEFT_ANGLE )
-                {
-                    criticalFlagFound = true;
-                    l.add(Literal.parseLiteral("ball_to_goalie_angle_very_left"));
-                }
+                l.add(Literal.parseLiteral("ball_to_goalie_angle_very_left"));
             }
-
-            if ( centreOfMap != null && !criticalFlagFound )
+            else if ( criticalRightGoalFlag != null && criticalRightGoalFlag.getDirection() < GOALIE_BALL_RIGHT_ANGLE )
             {
-                if ( Math.abs(centreOfMap.getDirection()) < GOALIE_BALL_CLOSE_TO_CENTRE_ANGLE )
-                {
-                    l.add(Literal.parseLiteral("ball_to_goalie_angle_centre"));
-                }
+                l.add(Literal.parseLiteral("ball_to_goalie_angle_right"));
+            }
+            else if ( criticalLeftGoalFlag != null && criticalLeftGoalFlag.getDirection() > GOALIE_BALL_LEFT_ANGLE )
+            {
+                l.add(Literal.parseLiteral("ball_to_goalie_angle_left"));
+            }
+            else if ( null != centreOfMap &&  Math.abs(centreOfMap.getDirection()) < GOALIE_BALL_CLOSE_TO_CENTRE_ANGLE )
+            {
+                l.add(Literal.parseLiteral("ball_to_goalie_angle_centre"));
             }
         }
 
@@ -289,6 +287,11 @@ class Brain extends AgArch implements Runnable, SensorInput {
         if ( flagRightToGoal != null )
         {
             l.add(Literal.parseLiteral("flag_right_to_goal_in_view"));
+            if ( flagRightToGoal.getDistance() < GOALIE_DISTANCE_EDGE_OF_GOAL )
+            {
+                l.add(Literal.parseLiteral("within_right_of_goal"));
+            }
+
             if ( flagRightToGoal.getDistance() < GOALIE_DISTANCE_VERY_EDGE_OF_GOAL )
             {
                 l.add(Literal.parseLiteral("within_very_right_of_goal"));
@@ -298,6 +301,12 @@ class Brain extends AgArch implements Runnable, SensorInput {
         if ( flagLeftToGoal != null )
         {
             l.add(Literal.parseLiteral("flag_left_to_goal_in_view"));
+
+            if ( flagLeftToGoal.getDistance() < GOALIE_DISTANCE_EDGE_OF_GOAL )
+            {
+                l.add(Literal.parseLiteral("within_left_of_goal"));
+            }
+
             if ( flagLeftToGoal.getDistance() < GOALIE_DISTANCE_VERY_EDGE_OF_GOAL )
             {
                 l.add(Literal.parseLiteral("within_very_left_of_goal"));
@@ -402,71 +411,23 @@ class Brain extends AgArch implements Runnable, SensorInput {
             return;
         }
 
-        switch ( actionToDo )
-        {
-            case "find_ball_act":
-                m_agent.turn(40);
-                break;
-            case "find_right_goal_act":
-                m_agent.turn(40);
-                break;
-            case "find_left_goal_act":
-                m_agent.turn(-40);
-                break;
-            case "find_own_goal_act":
-                m_agent.turn(60);
-                break;
-            case "find_centre_act":
-                m_agent.turn(80);
-                break;
-            case "align_ball_act":
-                m_agent.turn(ball.getDirection());
-                break;
-            case "align_right_goal_act":
-                m_agent.turn(flagRightToGoal.getDirection());
-                break;
-            case "align_left_goal_act":
-                m_agent.turn(flagLeftToGoal.getDirection());
-                break;
-            case "align_own_goal_act":
-                m_agent.turn(ownGoal.getDirection());
-                break;
-            case "align_centre_act":
-                m_agent.turn(centreOfMap.getDirection());
-                break;
-            case "wait_act":
-                m_agent.turn(0);
-                break;
-            case "run_to_ball_act":
-                m_agent.dash(300);
-                break;
-            case "run_to_right_goal_act":
-                m_agent.dash(100);
-                break;
-            case "run_to_left_goal_act":
-                m_agent.dash(100);
-                break;
-            case "run_to_own_goal_act":
-                m_agent.dash(100);
-                break;
-            case "run_to_centre_act":
-                m_agent.dash(100);
-                break;
-            case "catch_ball_act":
-                m_agent.catchBall(ball.getDirection());
-                break;
-            default:
-                getTS().getLogger().warning("INVALID ACTION");
-        }
-
         switch ( actionToDo ) {
-            case "find_ball_act", "find_teammate_act" -> m_agent.turn(SMALL_BROWSE_ANGLE);
-            case "find_own_goal_act" -> m_agent.turn(LARGE_BROWSE_ANGLE);
+            case "wait_act" -> m_agent.turn(0);
+            case "find_ball_act", "find_teammate_act", "find_right_goal_act" -> m_agent.turn(SMALL_BROWSE_ANGLE);
+            case "find_left_goal_act" -> m_agent.turn(-SMALL_BROWSE_ANGLE);
+            case "find_own_goal_act", "find_centre_act" -> m_agent.turn(LARGE_BROWSE_ANGLE);
             case "align_ball_act" -> m_agent.turn(ball.m_direction);
-            case "run_to_ball_act" -> m_agent.dash(300);
-            case "run_towards_own_goal_act" -> m_agent.dash(100);
+            case "align_right_goal_act" -> m_agent.turn(flagRightToGoal.getDirection());
+            case "align_left_goal_act" -> m_agent.turn(flagLeftToGoal.getDirection());
+            case "align_own_goal_act" -> m_agent.turn(ownGoal.getDirection());
+            case "align_centre_act" -> m_agent.turn(centreOfMap.getDirection());
+            case "run_to_ball_goalie_act" -> m_agent.dash(GOALIE_DASH_POWER);
+            case "run_to_ball_act" -> m_agent.dash(ball.m_distance * DASH_COEFFICIENT);
+            case "run_towards_own_goal_act", "run_to_right_goal_goalie_act", "run_to_left_goal_goalie_act", "run_to_own_goal_goalie_act", "run_to_centre_goalie_act" -> m_agent.dash(GOALIE_DASH_ALIGNMENT_POWER);
+            case "run_backwards_right_goal_goalie_act", "run_backwards_left_goal_goalie_act" ->  m_agent.dash(-GOALIE_DASH_ALIGNMENT_POWER);
             case "kick_to_opp_goal_act" -> m_agent.kick(KICK_POWER, oppGoal.m_direction);
             case "pass_to_teammate_act" -> m_agent.kick(PASS_COEFFICIENT * teammate.m_distance, teammate.m_direction);
+            case "catch_ball_act" -> m_agent.catchBall(ball.getDirection());
             default -> getTS().getLogger().warning("INVALID ACTION");
         }
 
