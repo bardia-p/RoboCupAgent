@@ -55,6 +55,7 @@ class Brain extends AgArch implements Runnable, SensorInput {
     public static final String LOGGING_FILE = "resources/logging.properties";
     public static final Double FIELD_LENGTH = 105.0;
     public static final Double FIELD_WIDTH = 68.0;
+    public static final Double MIN_PASS_DISTANCE = 2.0;
 
     // These determine what fraction of the half field is used to measure the home zone.
     public static final Double HOME_ZONE_FRACTION = 1.0 / 3.0;
@@ -170,11 +171,11 @@ class Brain extends AgArch implements Runnable, SensorInput {
     @Override
     public List<Literal> perceive() {
         getTS().getLogger().info("Agent " + getAgName() + " is perceiving..." );
-        List<Literal> l = new ArrayList<Literal>();
+        List<Literal> l = new ArrayList<>();
         BallInfo ball = getBall();
         GoalInfo opp_goal = getOpponentGoal();
         GoalInfo own_goal = getOwnGoal();
-        PlayerInfo teammate = getNearestTeammate();
+        PlayerInfo teammate = getFurthestTeammate();
         int playerZone = getPlayerZone();
 
         switch(playerZone) {
@@ -221,7 +222,7 @@ class Brain extends AgArch implements Runnable, SensorInput {
         BallInfo ball = getBall();
         GoalInfo opp_goal = getOpponentGoal();
         GoalInfo own_goal = getOwnGoal();
-        PlayerInfo teammate = getNearestTeammate();
+        PlayerInfo teammate = getFurthestTeammate();
 
         if (ball == null && (actionToDo.equals("align_ball_act") ||
                 actionToDo.equals("run_to_ball_act") ||
@@ -236,7 +237,7 @@ class Brain extends AgArch implements Runnable, SensorInput {
             return;
         }
 
-        if (own_goal == null && (actionToDo.equals("run_towards_goal_act"))) {
+        if (own_goal == null && (actionToDo.equals("run_towards_own_goal_act"))) {
             getTS().getLogger().info("Could not perform own goal related action! Missing own goal!");
             return;
         }
@@ -320,17 +321,18 @@ class Brain extends AgArch implements Runnable, SensorInput {
     }
 
     /**
-     * Returns the nearest teammate to the player if any.
-     * NOTE*: This function will not return the goalie!
+     * Returns the furthest teammate to the player if any.
+     * NOTE: This function will not return the goalie!
+     *
      * @return the nearest teammate to the player.
      */
-    private PlayerInfo getNearestTeammate() {
+    private PlayerInfo getFurthestTeammate() {
         Optional<PlayerInfo> player = m_memory.getAll("player").stream()
                 .map(p -> (PlayerInfo) p)
-                .filter(p -> p.m_teamName.equals(m_team) && !p.m_goalie)
-                .min(Comparator.comparingDouble(p -> p.m_distance));
+                .filter(p -> p.m_teamName.equals(m_team) && !p.m_goalie && p.m_distance > MIN_PASS_DISTANCE)
+                .max(Comparator.comparingDouble(p -> p.m_distance));
 
-        return player.isPresent() ? player.get() : null;
+        return player.orElse(null);
     }
 
     /**
@@ -339,7 +341,7 @@ class Brain extends AgArch implements Runnable, SensorInput {
      * 1: in opposition zone
      * 2: unknown
      *
-     * @return true if the player is in home zone.
+     * @return the zone for the player
      */
     private int getPlayerZone() {
         // First check the flags near the end
