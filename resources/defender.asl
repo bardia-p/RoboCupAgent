@@ -61,9 +61,17 @@
 
 +!run_to_home_zone:
     not(in_home_zone) &
-    own_goal_in_view
+    own_goal_in_view &
+    not(aligned_with_designated_flag)
     <-
-    run_towards_own_goal_act; !run_to_home_zone.
+    align_designated_flag_act; !run_to_home_zone.
+
++!run_to_home_zone:
+    not(in_home_zone) &
+    own_goal_in_view &
+    aligned_with_designated_flag
+    <-
+    run_towards_designated_flag_act; !run_to_home_zone.
 
 +!run_to_home_zone:
     in_home_zone
