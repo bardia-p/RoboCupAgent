@@ -56,4 +56,8 @@ interface SensorInput {
     //---------------------------------------------------------------------------
     // This function receives hear information from referee
     void hear(int time, String message);
+
+    //---------------------------------------------------------------------------
+    // This function receives caught ball information from referee
+    void caughtBall(String group);
 }

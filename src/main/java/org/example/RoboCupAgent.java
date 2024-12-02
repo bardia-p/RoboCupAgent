@@ -236,8 +236,24 @@ class RoboCupAgent implements SendCommand {
             VisualInfo info = new VisualInfo(message);
             info.parse();
             m_brain.see(info);
-        } else if (m.group(1).compareTo("hear") == 0)
+        } else if (m.group(1).compareTo("hear") == 0) {
             parseHear(message);
+        } else if (m.group(1).compareTo("sense_body") == 0) {
+            parseCatch(message);
+        }
+
+    }
+
+    //---------------------------------------------------------------------------
+    // This function parses catch information
+    private void parseCatch(String message)
+            throws IOException {
+        // get catch  information
+        Matcher m = catch_pattern.matcher(message);
+
+        if (m.matches()) {
+            m_brain.caughtBall(m.group(2));
+        }
     }
 
 
@@ -307,6 +323,7 @@ class RoboCupAgent implements SendCommand {
     private boolean m_playing;              // controls the MainLoop
     private final Pattern message_pattern = Pattern.compile("^\\((\\w+?)\\s.*");
     private final Pattern hear_pattern = Pattern.compile("^\\(hear\\s(\\w+?)\\s(\\w+?)\\s(.*)\\).*");
+    private final Pattern catch_pattern = Pattern.compile("\\(sense_body\\s(\\w+).*\\(catch\\s(\\w).*");
     //private Pattern coach_pattern = Pattern.compile("coach");
     // constants
     private static final int MSG_SIZE = 4096;    // Size of socket buffer
