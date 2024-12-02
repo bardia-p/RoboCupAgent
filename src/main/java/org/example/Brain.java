@@ -36,6 +36,7 @@ class Brain extends AgArch implements Runnable, SensorInput {
     private final RoboCupAgent.PlayerType m_playerType;
     private final char m_side;
     private final int m_number;
+    private String m_caught;
     private volatile boolean m_timeOver;
     private final String m_playMode;
 
@@ -97,6 +98,7 @@ class Brain extends AgArch implements Runnable, SensorInput {
         m_side = side;
         m_number = number;
         m_playMode = playMode;
+        m_caught = "0";
         actionPerformed = false;
 
         new RunLocalMAS().setupLogger(LOGGING_FILE);
@@ -332,6 +334,12 @@ class Brain extends AgArch implements Runnable, SensorInput {
             l.add(Literal.parseLiteral("teammate_in_view"));
         }
 
+        //Goalie: Check if caught ball
+        if ( m_caught.equals("1") )
+        {
+            l.add(Literal.parseLiteral("caught_ball"));
+        }
+
         getTS().getLogger().info("Perceptions: " + l);
 
         return l;
@@ -421,6 +429,7 @@ class Brain extends AgArch implements Runnable, SensorInput {
             case "run_backwards_right_goal_goalie_act", "run_backwards_left_goal_goalie_act" ->
                     m_agent.dash(-GOALIE_DASH_ALIGNMENT_POWER);
             case "kick_to_opp_goal_act" -> m_agent.kick(KICK_POWER, oppGoal.m_direction);
+            case "kick_random_act" -> m_agent.kick(KICK_POWER, 20);
             case "pass_to_teammate_act" -> m_agent.kick(PASS_COEFFICIENT * teammate.m_distance, teammate.m_direction);
             case "catch_ball_act" -> m_agent.catchBall(ball.getDirection());
             default -> getTS().getLogger().warning("INVALID ACTION");
@@ -591,6 +600,11 @@ class Brain extends AgArch implements Runnable, SensorInput {
         m_memory.store(info);
     }
 
+    //---------------------------------------------------------------------------
+    // This function receives caught information from player
+    public void caughtBall(String caught) {
+        this.m_caught = caught;
+    }
 
     //---------------------------------------------------------------------------
     // This function receives hear information from player

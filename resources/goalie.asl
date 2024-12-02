@@ -70,13 +70,21 @@ in_centre_position.
     !offensive_mode.
 
 +!offensive_mode:
-    not(ball_distance_catchable)
+    not(ball_distance_catchable) |
+    not(ball_in_view)
     <-
     !reset_centre;
     !wait.
 
 +!offensive_mode:
-    ball_kickable
+    caught_ball
+    <-
+    kick_random_act;
+    !offensive_mode.
+
++!offensive_mode:
+    ball_kickable &
+    not(caught_ball)
     <-
     catch_ball_act;
     !offensive_mode.
@@ -84,7 +92,8 @@ in_centre_position.
 +!offensive_mode:
     ball_distance_catchable &
     ball_angle_catchable &
-    not(ball_kickable)
+    not(ball_kickable) &
+    not(caught_ball)
     <-
     run_to_ball_goalie_act;
     !offensive_mode.
@@ -92,7 +101,8 @@ in_centre_position.
 +!offensive_mode:
     ball_distance_catchable &
     not(ball_angle_catchable) &
-    not(ball_kickable)
+    not(ball_kickable) &
+    not(caught_ball)
     <-
     align_ball_act;
     !offensive_mode.
