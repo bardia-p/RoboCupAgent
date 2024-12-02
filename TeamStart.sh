@@ -2,7 +2,7 @@
 
 path_1="target/classes:ASL:lib/*"
 className_1="org.example.RoboCupAgent"
-team_1="Carleton"
+team_1="Champions"
 
 path_2="target/classes:ASL:lib/*"          # change this to the path of your agent's directory.
 className_2="org.example.RoboCupAgent"     # change this to your agent's main class.
