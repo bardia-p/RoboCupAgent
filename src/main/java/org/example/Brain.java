@@ -74,11 +74,11 @@ class Brain extends AgArch implements Runnable, SensorInput {
     public static final Double FIELD_WIDTH = 68.0;
     public static final int ATTACKER_MIN_NUMBER = 4;
     public static final int DEFENDER_MIN_NUMBER = 2;
-    public static final int PLAYER_ANGLE_RELATIVE_TO_GOAL = 30;
+    public static final int PLAYER_ANGLE_RELATIVE_TO_GOAL = 40;
 
     // These determine what fraction of the half field is used to measure the home zone.
-    public static final Double HOME_ZONE_FRACTION = 1.0 / 3.0;
-    public static final Double OPP_ZONE_FRACTION = 7.0 / 16.0;
+    public static final Double SMALL_ZONE_FRACTION = 0.35;
+    public static final Double LARGE_ZONE_FRACTION = 0.45;
 
     //---------------------------------------------------------------------------
     // This constructor:
@@ -157,7 +157,7 @@ class Brain extends AgArch implements Runnable, SensorInput {
                 case DEFENDER ->
                         m_agent.move(-Math.random() * FIELD_LENGTH / 4 - FIELD_LENGTH/4, FIELD_WIDTH / 4 - Math.random() * FIELD_WIDTH / 2);
                 case ATTACKER ->
-                        m_agent.move(-Math.random() * FIELD_LENGTH / 4, FIELD_WIDTH / 2 - Math.random() * FIELD_WIDTH);
+                        m_agent.move(-Math.random() * FIELD_LENGTH / 4, FIELD_WIDTH / 4 - Math.random() * FIELD_WIDTH / 2);
             }
         }
 
@@ -204,6 +204,8 @@ class Brain extends AgArch implements Runnable, SensorInput {
         FlagInfo criticalLeftGoalFlag;
 
         PlayerInfo goalie = getGoalie();
+
+        GoalInfo designatedFlag = getDesignatedFlag();
 
         // Retrieve whether the player is in their zone or not
         switch (playerZone) {
@@ -269,8 +271,8 @@ class Brain extends AgArch implements Runnable, SensorInput {
                 if (angleInBetween > 180) {
                     angleInBetween -= 180;
                 }
-                if (Math.sqrt(Math.pow(goalieDistance, 2) + Math.pow(ballDistance, 2) -
-                        2 * goalieDistance * ballDistance * Math.cos(Math.toRadians(angleInBetween))) < GOALIE_BALL_CATCHABLE_DISTANCE) {
+                if (Math.pow(goalieDistance, 2) + Math.pow(ballDistance, 2) -
+                        2 * goalieDistance * ballDistance * Math.cos(Math.toRadians(angleInBetween)) < Math.pow(GOALIE_BALL_CATCHABLE_DISTANCE/2, 2)) {
                     l.add(Literal.parseLiteral("goalie_has_ball"));
                 }
             }
@@ -310,8 +312,10 @@ class Brain extends AgArch implements Runnable, SensorInput {
             if (ownGoal.getDistance() < IN_GOAL_DISTANCE) {
                 l.add(Literal.parseLiteral("inside_own_goal"));
             }
+        }
 
-            if (ownGoal.m_direction == getDesignatedFlag()) {
+        if (designatedFlag != null) {
+            if (designatedFlag.m_direction == getDesignatedFlagAngle()) {
                 l.add(Literal.parseLiteral("aligned_with_designated_flag"));
             }
         }
@@ -325,7 +329,7 @@ class Brain extends AgArch implements Runnable, SensorInput {
                 l.add(Literal.parseLiteral("defender_close_to_centre"));
             }
 
-            if (centreOfMap.m_direction == getDesignatedFlag()) {
+            if (centreOfMap.m_direction == getDesignatedFlagAngle()) {
                 l.add(Literal.parseLiteral("aligned_with_centre_defender"));
             }
         }
@@ -360,6 +364,8 @@ class Brain extends AgArch implements Runnable, SensorInput {
         ObjectInfo flagRightToGoal;
         ObjectInfo flagLeftToGoal;
 
+        GoalInfo designatedFlag = getDesignatedFlag();
+
         // Goalie: Retrieve specific flag perceptions
         if (m_side == 'r') {
             flagRightToGoal = getFlag("t r 50");
@@ -383,9 +389,13 @@ class Brain extends AgArch implements Runnable, SensorInput {
             return;
         }
 
-        if (ownGoal == null && (actionToDo.equals("run_towards_own_goal_act") ||
-                actionToDo.equals("align_own_goal_act") || actionToDo.equals("align_designated_flag_act"))) {
+        if (ownGoal == null && (actionToDo.equals("run_towards_own_goal_act") || actionToDo.equals("align_own_goal_act"))) {
             getTS().getLogger().info("Could not perform own goal related action! Missing own goal!");
+            return;
+        }
+
+        if (designatedFlag == null && actionToDo.equals("align_designated_flag_act")) {
+            getTS().getLogger().info("Could not perform designated flag related action! Missing designated flag!");
             return;
         }
 
@@ -413,10 +423,10 @@ class Brain extends AgArch implements Runnable, SensorInput {
             case "wait_act" -> m_agent.turn(0);
             case "find_ball_act", "find_teammate_act", "find_right_goal_act" -> m_agent.turn(SMALL_BROWSE_ANGLE);
             case "find_left_goal_act" -> m_agent.turn(-SMALL_BROWSE_ANGLE);
-            case "find_own_goal_act", "find_centre_act", "find_designated_flag_act" -> m_agent.turn(LARGE_BROWSE_ANGLE);
+            case "find_own_goal_act", "find_opp_goal_act", "find_centre_act", "find_designated_flag_act" -> m_agent.turn(LARGE_BROWSE_ANGLE);
             case "align_ball_act" -> m_agent.turn(ball.m_direction);
-            case "align_designated_flag_act" -> m_agent.turn(-getDesignatedFlag() + ownGoal.m_direction);
-            case "align_centre_defender_act" -> m_agent.turn(-getDesignatedFlag() + centreOfMap.m_direction);
+            case "align_designated_flag_act" -> m_agent.turn(-getDesignatedFlagAngle() + designatedFlag.m_direction);
+            case "align_centre_defender_act" -> m_agent.turn(-getDesignatedFlagAngle() + centreOfMap.m_direction);
             case "align_right_goal_act" -> m_agent.turn(flagRightToGoal.getDirection());
             case "align_left_goal_act" -> m_agent.turn(flagLeftToGoal.getDirection());
             case "align_own_goal_act" -> m_agent.turn(ownGoal.getDirection());
@@ -546,13 +556,13 @@ class Brain extends AgArch implements Runnable, SensorInput {
         GoalInfo goal_opp = (GoalInfo) m_memory.getObject("goal " + opp_side);
         FlagInfo bottom_opp = getFlag(opp_side + " b");
 
-        Double homeZoneFraction = HOME_ZONE_FRACTION;
-        Double oppZoneFraction = OPP_ZONE_FRACTION;
+        Double homeZoneFraction = SMALL_ZONE_FRACTION;
+        Double opponentZoneFraction = LARGE_ZONE_FRACTION;
 
-        // For attackers swap the threshold!
+
         if (m_playerType == RoboCupAgent.PlayerType.ATTACKER) {
-            homeZoneFraction = OPP_ZONE_FRACTION;
-            oppZoneFraction = HOME_ZONE_FRACTION;
+            homeZoneFraction = LARGE_ZONE_FRACTION;
+            opponentZoneFraction = SMALL_ZONE_FRACTION;
         }
 
         // If you can see home, and you are close to it!
@@ -563,9 +573,9 @@ class Brain extends AgArch implements Runnable, SensorInput {
         }
 
         // If you can see opposition, and you are close to it!
-        if ((top_opp != null && top_opp.m_distance <= FIELD_LENGTH * oppZoneFraction) ||
-                (goal_opp != null && goal_opp.m_distance <= FIELD_LENGTH * oppZoneFraction) ||
-                (bottom_opp != null && bottom_opp.m_distance <= FIELD_LENGTH * oppZoneFraction)) {
+        if ((top_opp != null && top_opp.m_distance <= FIELD_LENGTH * opponentZoneFraction) ||
+                (goal_opp != null && goal_opp.m_distance <= FIELD_LENGTH * opponentZoneFraction) ||
+                (bottom_opp != null && bottom_opp.m_distance <= FIELD_LENGTH * opponentZoneFraction)) {
             return 1;
         }
 
@@ -577,8 +587,17 @@ class Brain extends AgArch implements Runnable, SensorInput {
      *
      * @return the designated flag info
      */
-    private int getDesignatedFlag() {
+    private int getDesignatedFlagAngle() {
         return (m_number == DEFENDER_MIN_NUMBER || m_number == ATTACKER_MIN_NUMBER) ? PLAYER_ANGLE_RELATIVE_TO_GOAL : -PLAYER_ANGLE_RELATIVE_TO_GOAL;
+    }
+
+    /**
+     * Get the designated flag for the attacker
+     *
+     * @return the designated flag info
+     */
+    private GoalInfo getDesignatedFlag() {
+        return (m_playerType == RoboCupAgent.PlayerType.DEFENDER) ? getOwnGoal() : getOpponentGoal();
     }
 
     /**

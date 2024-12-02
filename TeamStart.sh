@@ -26,20 +26,32 @@ trap kill_all_tasks SIGINT
 # Load team one
 java -cp "$path_1" $className_1 -team $team_1 -playerType Goalie &
 ping localhost &
-sleep .5
+sleep .2
 java -cp "$path_1" $className_1 -team $team_1 -playerType Defender &
 ping localhost &
-sleep .5
+sleep .2
 java -cp "$path_1" $className_1 -team $team_1 -playerType Defender &
 ping localhost &
-sleep .5
+sleep .2
+java -cp "$path_1" $className_1 -team $team_1 -playerType Attacker &
+ping localhost &
+sleep .2
+java -cp "$path_1" $className_1 -team $team_1 -playerType Attacker &
+ping localhost &
+sleep .2
 
 # Load team two
 java -cp "$path_2" $className_2 -team $team_2 -playerType Goalie &
 ping localhost &
-sleep .5
+sleep .2
 java -cp "$path_2" $className_2 -team $team_2 -playerType Defender &
 ping localhost &
-sleep .5
+sleep .2
 java -cp "$path_2" $className_2 -team $team_2 -playerType Defender &
+ping localhost &
+sleep .2
+java -cp "$path_2" $className_2 -team $team_2 -playerType Attacker &
+ping localhost &
+sleep .2
+java -cp "$path_2" $className_2 -team $team_2 -playerType Attacker &
 ping localhost
