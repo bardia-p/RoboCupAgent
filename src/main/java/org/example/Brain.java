@@ -612,6 +612,35 @@ class Brain extends AgArch implements Runnable, SensorInput {
         return goalie.orElse(null);
     }
 
+    private boolean IsOffside(ObjectInfo ball, PlayerInfo[] enemies, FlagInfo flag, GoalInfo goal) {
+        double d_ball =  GetDistanceFromOppLine(ball, flag, goal);
+
+        double d;
+        for (PlayerInfo enemy : enemies) {
+            d = GetDistanceFromOppLine(enemy, flag, goal);
+            if (d < d_ball) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private double GetDistanceFromOppLine(ObjectInfo obj, FlagInfo post, GoalInfo goal) {
+        double dp = obj.m_distance;
+        double ap = Math.toRadians(Math.abs(goal.m_direction - obj.m_direction));
+        double df = post.m_distance;
+        double af = Math.toRadians(Math.abs(goal.m_direction - post.m_direction));
+        double dg = goal.m_distance;
+
+        double dgp = Math.sqrt(dp*dp + dg*dg - 2*dp*dg*Math.cos(ap));
+        double dgf = Math.sqrt(df*df + dg*dg - 2*df*dg*Math.cos(af));
+        double dfp = Math.sqrt(df*df + dp*dp - 2*df*dp*Math.cos(ap - af));
+
+        double phi_p = Math.acos((dgf*dgf + dgp*dgp - dfp*dfp) / (2*dgf*dgp));
+
+        return dgp * Math.sin(phi_p);
+    }
+
 
     //---------------------------------------------------------------------------
     // This function sends see information
