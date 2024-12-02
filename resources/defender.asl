@@ -7,28 +7,46 @@
 
 +!wait:
     not(~in_home_zone) &
-    not ball_in_view
+    goalie_has_ball &
+    close_to_goalie
+    <-
+    !give_goalie_space.
+
++!wait:
+    not(~in_home_zone) &
+    goalie_has_ball &
+    not(close_to_goalie)
+    <-
+    !wait.
+
++!wait:
+    not(~in_home_zone) &
+    not(goalie_has_ball) &
+    not(ball_in_view)
     <-
     find_ball_act; !wait.
 
 +!wait:
     not(~in_home_zone) &
+    not(goalie_has_ball) &
     ball_in_view &
-    not aligned_with_ball &
-    not ball_kickable
+    not(aligned_with_ball) &
+    not(ball_kickable)
     <-
     align_ball_act; !wait.
 
 +!wait:
     not(~in_home_zone) &
+    not(goalie_has_ball) &
     ball_in_view &
     aligned_with_ball &
-    not ball_kickable
+    not(ball_kickable)
     <-
     run_to_ball_act; !wait.
 
 +!wait:
     not(~in_home_zone) &
+    not(goalie_has_ball) &
     ball_in_view &
     ball_kickable &
     opp_goal_in_view
@@ -37,6 +55,7 @@
 
 +!wait:
     not(~in_home_zone) &
+    not(goalie_has_ball) &
     ball_in_view &
     ball_kickable &
     not(opp_goal_in_view) &
@@ -46,6 +65,7 @@
 
 +!wait:
     not(~in_home_zone) &
+    not(goalie_has_ball) &
     ball_in_view &
     ball_kickable &
     not(opp_goal_in_view) &
@@ -75,5 +95,30 @@
 
 +!run_to_home_zone:
     in_home_zone
+    <-
+    !wait.
+
++!give_goalie_space:
+    not(defender_close_to_centre) &
+    not(centre_visible)
+    <-
+    find_centre_act; !give_goalie_space.
+
++!give_goalie_space:
+    not(defender_close_to_centre) &
+    centre_visible &
+    not(aligned_with_centre_defender)
+    <-
+    align_centre_defender_act; !give_goalie_space.
+
++!give_goalie_space:
+    not(defender_close_to_centre) &
+    centre_visible &
+    aligned_with_centre_defender
+    <-
+    run_to_centre_act; !give_goalie_space.
+
++!give_goalie_space:
+    defender_close_to_centre
     <-
     !wait.

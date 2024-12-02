@@ -67,13 +67,13 @@ class Brain extends AgArch implements Runnable, SensorInput {
     public static final double GOALIE_DISTANCE_EDGE_OF_GOAL = 37.5;
     public static final double GOALIE_DISTANCE_VERY_EDGE_OF_GOAL = 36;
     public static final double GOALIE_DISTANCE_FROM_CENTRE = 50;
+    public static final double DEFENDER_DISTANCE_FROM_CENTRE = 30;
+    public static final double DEFENDER_DISTANCE_FROM_GOALIE = 10;
     public static final Double FIELD_LENGTH = 105.0;
     public static final Double FIELD_WIDTH = 68.0;
     public static final int ATTACKER_MIN_NUMBER = 4;
     public static final int DEFENDER_MIN_NUMBER = 2;
-
     public static final int PLAYER_ANGLE_RELATIVE_TO_GOAL = 30;
-
 
     // These determine what fraction of the half field is used to measure the home zone.
     public static final Double HOME_ZONE_FRACTION = 1.0 / 3.0;
@@ -109,7 +109,7 @@ class Brain extends AgArch implements Runnable, SensorInput {
             new TransitionSystem(ag, null, null, this);
             ag.initAg();
 
-            switch(m_playerType){
+            switch (m_playerType) {
                 case GOALIE -> ag.loadInitialAS(GOALIE_FILE);
                 case DEFENDER -> ag.loadInitialAS(DEFENDER_FILE);
                 case ATTACKER -> ag.loadInitialAS(ATTACKER_FILE);
@@ -150,10 +150,12 @@ class Brain extends AgArch implements Runnable, SensorInput {
     public void run() {
         // first put it somewhere on my side
         if (Pattern.matches("^before_kick_off.*", m_playMode)) {
-            switch(m_playerType) {
-                case GOALIE -> m_agent.move(-( FIELD_LENGTH - 5 ) / 2, 0);
-                case DEFENDER -> m_agent.move(-Math.random() * FIELD_LENGTH / 2, FIELD_WIDTH/4 - Math.random() * FIELD_WIDTH / 2);
-                case ATTACKER -> m_agent.move(-Math.random() * FIELD_LENGTH / 4, FIELD_WIDTH/2 - Math.random() * FIELD_WIDTH);
+            switch (m_playerType) {
+                case GOALIE -> m_agent.move(-(FIELD_LENGTH - 5) / 2, 0);
+                case DEFENDER ->
+                        m_agent.move(-Math.random() * FIELD_LENGTH / 4 - FIELD_LENGTH/4, FIELD_WIDTH / 4 - Math.random() * FIELD_WIDTH / 2);
+                case ATTACKER ->
+                        m_agent.move(-Math.random() * FIELD_LENGTH / 4, FIELD_WIDTH / 2 - Math.random() * FIELD_WIDTH);
             }
         }
 
@@ -163,13 +165,12 @@ class Brain extends AgArch implements Runnable, SensorInput {
                 getTS().getLogger().info("Reasoning....");
                 getTS().reasoningCycle();
 
-                if ( canSleep() ) {
-                    getTS().getLogger().info("Agent sleep" );
+                if (canSleep()) {
+                    getTS().getLogger().info("Agent sleep");
                     actionPerformed = false;
                     sleep();
-                }
-                else {
-                    getTS().getLogger().info("Agent cannot sleep" );
+                } else {
+                    getTS().getLogger().info("Agent cannot sleep");
                 }
             }
         } catch (Exception e) {
@@ -185,7 +186,7 @@ class Brain extends AgArch implements Runnable, SensorInput {
     // this method just add some perception for the agent
     @Override
     public List<Literal> perceive() {
-        getTS().getLogger().info("Agent " + getAgName() + " is perceiving..." );
+        getTS().getLogger().info("Agent " + getAgName() + " is perceiving...");
         List<Literal> l = new ArrayList<>();
 
         BallInfo ball = getBall();
@@ -200,8 +201,10 @@ class Brain extends AgArch implements Runnable, SensorInput {
         FlagInfo criticalRightGoalFlag;
         FlagInfo criticalLeftGoalFlag;
 
+        PlayerInfo goalie = getGoalie();
+
         // Retrieve whether the player is in their zone or not
-        switch(playerZone) {
+        switch (playerZone) {
             case 0 -> l.add(Literal.parseLiteral("in_home_zone"));
             case 1 -> l.add(Literal.parseLiteral("~in_home_zone"));
         }
@@ -217,6 +220,11 @@ class Brain extends AgArch implements Runnable, SensorInput {
             flagLeftToGoal = getFlag("t l 50");
             criticalRightGoalFlag = getFlag("c b 0");
             criticalLeftGoalFlag = getFlag("c t 0");
+        }
+
+        // Check for the goalie
+        if (goalie != null && goalie.m_distance < DEFENDER_DISTANCE_FROM_GOALIE) {
+            l.add(Literal.parseLiteral("close_to_goalie"));
         }
 
         // Retrieve general ball perceptions
@@ -235,76 +243,92 @@ class Brain extends AgArch implements Runnable, SensorInput {
                 l.add(Literal.parseLiteral("ball_angle_catchable"));
             }
 
-            if (ball.getDistance() <=  GOALIE_BALL_CATCHABLE_DISTANCE ) {
+            if (ball.getDistance() <= GOALIE_BALL_CATCHABLE_DISTANCE) {
                 l.add(Literal.parseLiteral("ball_distance_catchable"));
             }
 
             // Goalie: check if ball is within an angle that requires position change
             if (criticalRightGoalFlag != null && criticalRightGoalFlag.getDirection() < GOALIE_BALL_VERY_RIGHT_ANGLE) {
                 l.add(Literal.parseLiteral("ball_to_goalie_angle_very_right"));
-            } else if ( criticalLeftGoalFlag != null && criticalLeftGoalFlag.getDirection() > GOALIE_BALL_VERY_LEFT_ANGLE) {
+            } else if (criticalLeftGoalFlag != null && criticalLeftGoalFlag.getDirection() > GOALIE_BALL_VERY_LEFT_ANGLE) {
                 l.add(Literal.parseLiteral("ball_to_goalie_angle_very_left"));
-            } else if ( criticalRightGoalFlag != null && criticalRightGoalFlag.getDirection() < GOALIE_BALL_RIGHT_ANGLE ) {
+            } else if (criticalRightGoalFlag != null && criticalRightGoalFlag.getDirection() < GOALIE_BALL_RIGHT_ANGLE) {
                 l.add(Literal.parseLiteral("ball_to_goalie_angle_right"));
-            } else if ( criticalLeftGoalFlag != null && criticalLeftGoalFlag.getDirection() > GOALIE_BALL_LEFT_ANGLE ) {
+            } else if (criticalLeftGoalFlag != null && criticalLeftGoalFlag.getDirection() > GOALIE_BALL_LEFT_ANGLE) {
                 l.add(Literal.parseLiteral("ball_to_goalie_angle_left"));
-            } else if ( null != centreOfMap &&  Math.abs(centreOfMap.getDirection()) < GOALIE_BALL_CLOSE_TO_CENTRE_ANGLE ) {
+            } else if (null != centreOfMap && Math.abs(centreOfMap.getDirection()) < GOALIE_BALL_CLOSE_TO_CENTRE_ANGLE) {
                 l.add(Literal.parseLiteral("ball_to_goalie_angle_centre"));
+            }
+
+            if (goalie != null){
+                float goalieDistance = goalie.m_distance;
+                float ballDistance = ball.m_distance;
+                float angleInBetween = Math.abs(goalie.m_direction - ball.m_direction);
+                if (angleInBetween > 180) {
+                    angleInBetween -= 180;
+                }
+                if (Math.sqrt(Math.pow(goalieDistance, 2) + Math.pow(ballDistance, 2) -
+                        2 * goalieDistance * ballDistance * Math.cos(Math.toRadians(angleInBetween))) < GOALIE_BALL_CATCHABLE_DISTANCE) {
+                    l.add(Literal.parseLiteral("goalie_has_ball"));
+                }
             }
         }
 
         // Goalie: Specific positioning of goalie based on certain flags
-        if ( flagRightToGoal != null ) {
+        if (flagRightToGoal != null) {
             l.add(Literal.parseLiteral("flag_right_to_goal_in_view"));
-            if ( flagRightToGoal.getDistance() < GOALIE_DISTANCE_EDGE_OF_GOAL ) {
+            if (flagRightToGoal.getDistance() < GOALIE_DISTANCE_EDGE_OF_GOAL) {
                 l.add(Literal.parseLiteral("within_right_of_goal"));
             }
 
-            if ( flagRightToGoal.getDistance() < GOALIE_DISTANCE_VERY_EDGE_OF_GOAL ) {
+            if (flagRightToGoal.getDistance() < GOALIE_DISTANCE_VERY_EDGE_OF_GOAL) {
                 l.add(Literal.parseLiteral("within_very_right_of_goal"));
             }
         }
 
-        if ( flagLeftToGoal != null ) {
+        if (flagLeftToGoal != null) {
             l.add(Literal.parseLiteral("flag_left_to_goal_in_view"));
 
-            if ( flagLeftToGoal.getDistance() < GOALIE_DISTANCE_EDGE_OF_GOAL )
-            {
+            if (flagLeftToGoal.getDistance() < GOALIE_DISTANCE_EDGE_OF_GOAL) {
                 l.add(Literal.parseLiteral("within_left_of_goal"));
             }
 
-            if ( flagLeftToGoal.getDistance() < GOALIE_DISTANCE_VERY_EDGE_OF_GOAL )
-            {
+            if (flagLeftToGoal.getDistance() < GOALIE_DISTANCE_VERY_EDGE_OF_GOAL) {
                 l.add(Literal.parseLiteral("within_very_left_of_goal"));
             }
         }
 
-        if ( oppGoal != null ) {
+        if (oppGoal != null) {
             l.add(Literal.parseLiteral("opp_goal_in_view"));
         }
 
-        if ( ownGoal != null ) {
+        if (ownGoal != null) {
             l.add(Literal.parseLiteral("own_goal_in_view"));
 
-            if ( ownGoal.getDistance() < IN_GOAL_DISTANCE ) {
+            if (ownGoal.getDistance() < IN_GOAL_DISTANCE) {
                 l.add(Literal.parseLiteral("inside_own_goal"));
             }
 
-            getTS().getLogger().info("MY DIRECTION IS : " + ownGoal.m_direction);
-            if (ownGoal.m_direction == getDesignatedFlag()){
+            if (ownGoal.m_direction == getDesignatedFlag()) {
                 l.add(Literal.parseLiteral("aligned_with_designated_flag"));
             }
         }
 
-        if ( centreOfMap != null ) {
+        if (centreOfMap != null) {
             l.add(Literal.parseLiteral("centre_visible"));
-            if ( centreOfMap.getDistance() < GOALIE_DISTANCE_FROM_CENTRE )
-            {
+            if (centreOfMap.getDistance() < GOALIE_DISTANCE_FROM_CENTRE) {
                 l.add(Literal.parseLiteral("goalie_distance_from_centre"));
+            }
+            if (centreOfMap.getDistance() < DEFENDER_DISTANCE_FROM_CENTRE) {
+                l.add(Literal.parseLiteral("defender_close_to_centre"));
+            }
+
+            if (centreOfMap.m_direction == getDesignatedFlag()) {
+                l.add(Literal.parseLiteral("aligned_with_centre_defender"));
             }
         }
 
-        if ( teammate != null ) {
+        if (teammate != null) {
             l.add(Literal.parseLiteral("teammate_in_view"));
         }
 
@@ -329,8 +353,7 @@ class Brain extends AgArch implements Runnable, SensorInput {
         ObjectInfo flagLeftToGoal;
 
         // Goalie: Retrieve specific flag perceptions
-        if (m_side == 'r')
-        {
+        if (m_side == 'r') {
             flagRightToGoal = getFlag("t r 50");
             flagLeftToGoal = getFlag("b r 50");
         } else {
@@ -342,18 +365,18 @@ class Brain extends AgArch implements Runnable, SensorInput {
                 actionToDo.equals("run_to_ball_act") ||
                 actionToDo.equals("kick_to_opp_goal_act") ||
                 actionToDo.equals("pass_to_teammate_act") ||
-                actionToDo.equals("catch_ball_act") )){
+                actionToDo.equals("catch_ball_act"))) {
             getTS().getLogger().info("Could not perform ball related action! Missing ball!");
             return;
         }
 
-        if (oppGoal == null && (actionToDo.equals("kick_to_opp_goal_act"))){
+        if (oppGoal == null && (actionToDo.equals("kick_to_opp_goal_act"))) {
             getTS().getLogger().info("Could not perform opp goal related action! Missing opp goal!");
             return;
         }
 
         if (ownGoal == null && (actionToDo.equals("run_towards_own_goal_act") ||
-                actionToDo.equals("align_own_goal_act"))) {
+                actionToDo.equals("align_own_goal_act") || actionToDo.equals("align_designated_flag_act"))) {
             getTS().getLogger().info("Could not perform own goal related action! Missing own goal!");
             return;
         }
@@ -373,18 +396,19 @@ class Brain extends AgArch implements Runnable, SensorInput {
             return;
         }
 
-        if (centreOfMap == null && (actionToDo.equals("align_centre_act"))) {
+        if (centreOfMap == null && (actionToDo.equals("align_centre_act") || actionToDo.equals("align_centre_defender_act"))) {
             getTS().getLogger().info("Could not perform left goal flag related action! Missing left goal flag!");
             return;
         }
 
-        switch ( actionToDo ) {
+        switch (actionToDo) {
             case "wait_act" -> m_agent.turn(0);
             case "find_ball_act", "find_teammate_act", "find_right_goal_act" -> m_agent.turn(SMALL_BROWSE_ANGLE);
             case "find_left_goal_act" -> m_agent.turn(-SMALL_BROWSE_ANGLE);
-            case "find_own_goal_act", "find_centre_act" , "find_designated_flag_act" -> m_agent.turn(LARGE_BROWSE_ANGLE);
+            case "find_own_goal_act", "find_centre_act", "find_designated_flag_act" -> m_agent.turn(LARGE_BROWSE_ANGLE);
             case "align_ball_act" -> m_agent.turn(ball.m_direction);
             case "align_designated_flag_act" -> m_agent.turn(-getDesignatedFlag() + ownGoal.m_direction);
+            case "align_centre_defender_act" -> m_agent.turn(-getDesignatedFlag() + centreOfMap.m_direction);
             case "align_right_goal_act" -> m_agent.turn(flagRightToGoal.getDirection());
             case "align_left_goal_act" -> m_agent.turn(flagLeftToGoal.getDirection());
             case "align_own_goal_act" -> m_agent.turn(ownGoal.getDirection());
@@ -392,8 +416,10 @@ class Brain extends AgArch implements Runnable, SensorInput {
             case "run_to_ball_goalie_act" -> m_agent.dash(GOALIE_DASH_POWER);
             case "run_to_ball_act" -> m_agent.dash(ball.m_distance * DASH_COEFFICIENT);
             case "run_towards_designated_flag_act", "run_to_right_goal_goalie_act", "run_to_left_goal_goalie_act",
-                    "run_to_own_goal_goalie_act", "run_to_centre_goalie_act" -> m_agent.dash(GOALIE_DASH_ALIGNMENT_POWER);
-            case "run_backwards_right_goal_goalie_act", "run_backwards_left_goal_goalie_act" ->  m_agent.dash(-GOALIE_DASH_ALIGNMENT_POWER);
+                    "run_to_own_goal_goalie_act", "run_to_centre_goalie_act", "run_to_centre_act" ->
+                    m_agent.dash(GOALIE_DASH_ALIGNMENT_POWER);
+            case "run_backwards_right_goal_goalie_act", "run_backwards_left_goal_goalie_act" ->
+                    m_agent.dash(-GOALIE_DASH_ALIGNMENT_POWER);
             case "kick_to_opp_goal_act" -> m_agent.kick(KICK_POWER, oppGoal.m_direction);
             case "pass_to_teammate_act" -> m_agent.kick(PASS_COEFFICIENT * teammate.m_distance, teammate.m_direction);
             case "catch_ball_act" -> m_agent.catchBall(ball.getDirection());
@@ -437,25 +463,29 @@ class Brain extends AgArch implements Runnable, SensorInput {
 
     //===========================================================================
     // Implementation of SensorInput Interface
+
     /**
      * Returns the ball if present.
+     *
      * @return ball info, if not null
      */
-    private BallInfo getBall(){
+    private BallInfo getBall() {
         return (BallInfo) m_memory.getObject("ball");
     }
 
     /**
      * Returns whether a specific flag is visible or not.
+     *
      * @param flagName, the flag to check.
      * @return the flag info, if not null
      */
     private FlagInfo getFlag(String flagName) {
-        return (FlagInfo) m_memory.getObject("f " + flagName);
+        return (FlagInfo) m_memory.getObject("flag " + flagName);
     }
 
     /**
      * Returns the opponent's goal if present.
+     *
      * @return opponent's goal info, if not null
      */
     private GoalInfo getOpponentGoal() {
@@ -465,9 +495,10 @@ class Brain extends AgArch implements Runnable, SensorInput {
 
     /**
      * Returns our goal if present.
+     *
      * @return opponent's goal info, if not null
      */
-    private GoalInfo getOwnGoal(){
+    private GoalInfo getOwnGoal() {
         return (GoalInfo) m_memory.getObject("goal " + m_side);
     }
 
@@ -541,8 +572,20 @@ class Brain extends AgArch implements Runnable, SensorInput {
         return (m_number == DEFENDER_MIN_NUMBER || m_number == ATTACKER_MIN_NUMBER) ? PLAYER_ANGLE_RELATIVE_TO_GOAL : -PLAYER_ANGLE_RELATIVE_TO_GOAL;
     }
 
+    /**
+     * Looks for the goalie.
+     * @return playerInfo is goalie and null otherwise.
+     */
+    private PlayerInfo getGoalie() {
+        Optional<PlayerInfo> goalie = m_memory.getAll("player").stream()
+                .map(p -> (PlayerInfo) p)
+                .filter(p -> p.m_teamName.equals(m_team) && p.m_goalie).findFirst();
 
-        //---------------------------------------------------------------------------
+        return goalie.orElse(null);
+    }
+
+
+    //---------------------------------------------------------------------------
     // This function sends see information
     public void see(VisualInfo info) {
         m_memory.store(info);
