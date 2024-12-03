@@ -80,6 +80,9 @@ class Brain extends AgArch implements Runnable, SensorInput {
     // These determine what fraction of the half field is used to measure the home zone.
     public static final Double SMALL_ZONE_FRACTION = 0.35;
     public static final Double LARGE_ZONE_FRACTION = 0.45;
+    //Offense custom zones
+    public static final Double OFF_SMALL_ZONE_FRACTION = 0.45;
+    public static final Double OFF_LARGE_ZONE_FRACTION = 0.2;
 
     //---------------------------------------------------------------------------
     // This constructor:
@@ -641,8 +644,8 @@ class Brain extends AgArch implements Runnable, SensorInput {
 
 
         if (m_playerType == RoboCupAgent.PlayerType.ATTACKER) {
-            homeZoneFraction = LARGE_ZONE_FRACTION;
-            opponentZoneFraction = SMALL_ZONE_FRACTION;
+            homeZoneFraction = OFF_LARGE_ZONE_FRACTION;
+            opponentZoneFraction = OFF_SMALL_ZONE_FRACTION;
         }
 
         // If you can see home, and you are close to it!
@@ -701,14 +704,16 @@ class Brain extends AgArch implements Runnable, SensorInput {
     private boolean IsOffside(ObjectInfo ball, PlayerInfo[] enemies, FlagInfo flag, GoalInfo goal) {
         double d_ball =  GetDistanceFromOppLine(ball, flag, goal);
 
-        double d;
+        double d = -1.0;
         for (PlayerInfo enemy : enemies) {
             d = GetDistanceFromOppLine(enemy, flag, goal);
             if (d < d_ball) {
-                System.out.println("############ Enemy distance: " + d + ", Ball distance: " + d_ball);
+
                 return false;
             }
         }
+
+        System.out.println("##### OFFSIDE ####### Enemy distance: " + d + ", Ball distance: " + d_ball);
         return true;
     }
 
@@ -734,10 +739,10 @@ class Brain extends AgArch implements Runnable, SensorInput {
                 .filter(p -> !p.m_teamName.equals(m_team) && !p.m_goalie)
                 .toArray(PlayerInfo[]::new);
 
+        /* LOGGING
         for(var enemy : enemies) {
             System.out.println("############ Enemy : " + enemy.m_teamName);
-        }
-
+        } */
 
         return enemies;
     }
