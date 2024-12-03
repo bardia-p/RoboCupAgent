@@ -211,6 +211,8 @@ class Brain extends AgArch implements Runnable, SensorInput {
         FlagInfo flagLeftToGoal;
         FlagInfo criticalRightGoalFlag;
         FlagInfo criticalLeftGoalFlag;
+        FlagInfo goalPostTop;
+        FlagInfo goalPostBottom;
 
         PlayerInfo goalie = getGoalie();
 
@@ -228,11 +230,15 @@ class Brain extends AgArch implements Runnable, SensorInput {
             flagLeftToGoal = getFlag("b r 50");
             criticalRightGoalFlag = getFlag("c t 0");
             criticalLeftGoalFlag = getFlag("c b 0");
+            goalPostTop = getFlag("l t 0");
+            goalPostBottom = getFlag("l b 0");
         } else {
             flagRightToGoal = getFlag("b l 50");
             flagLeftToGoal = getFlag("t l 50");
             criticalRightGoalFlag = getFlag("c b 0");
             criticalLeftGoalFlag = getFlag("c t 0");
+            goalPostTop = getFlag("r t 0");
+            goalPostBottom = getFlag("r b 0");
         }
 
         // Check for the goalie
@@ -366,7 +372,24 @@ class Brain extends AgArch implements Runnable, SensorInput {
             l.add(Literal.parseLiteral("caught_ball"));
         }
 
+        //Offense: Offside calculations
+        if(oppGoal != null && ball != null) {
+            FlagInfo post = (goalPostTop != null) ? goalPostTop : goalPostBottom;
+            var enemies = getVisibleEnemies();
+
+
+
+            if(post != null && enemies.length > 0) {
+                System.out.println("########## Post: " + post.m_direction + ", Goal: " + oppGoal.m_direction + ", Ball: " + ball.m_direction + ", Enemies: " + enemies.length);
+
+                if(IsOffside(ball, enemies, post, oppGoal)) {
+                    l.add(Literal.parseLiteral("ball_offside"));
+                }
+            }
+        }
+
         getTS().getLogger().info("Perceptions: " + l);
+
 
         return l;
     }
@@ -667,6 +690,56 @@ class Brain extends AgArch implements Runnable, SensorInput {
                 .filter(p -> p.m_teamName.equals(m_team) && p.m_goalie).findFirst();
 
         return goalie.orElse(null);
+    }
+
+
+    /**
+     * Checks whether the ball is behind the enemy line or not (ie. behind the furthest back enemy player not including the goalie)
+     *
+     * @return Offside status condition
+     */
+    private boolean IsOffside(ObjectInfo ball, PlayerInfo[] enemies, FlagInfo flag, GoalInfo goal) {
+        double d_ball =  GetDistanceFromOppLine(ball, flag, goal);
+
+        double d;
+        for (PlayerInfo enemy : enemies) {
+            d = GetDistanceFromOppLine(enemy, flag, goal);
+            if (d < d_ball) {
+                System.out.println("############ Enemy distance: " + d + ", Ball distance: " + d_ball);
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private double GetDistanceFromOppLine(ObjectInfo obj, FlagInfo post, GoalInfo goal) {
+        double dp = obj.m_distance;
+        double ap = Math.toRadians(Math.abs(goal.m_direction - obj.m_direction));
+        double df = post.m_distance;
+        double af = Math.toRadians(Math.abs(goal.m_direction - post.m_direction));
+        double dg = goal.m_distance;
+
+        double dgp = Math.sqrt(dp*dp + dg*dg - 2*dp*dg*Math.cos(ap));
+        double dgf = Math.sqrt(df*df + dg*dg - 2*df*dg*Math.cos(af));
+        double dfp = Math.sqrt(df*df + dp*dp - 2*df*dp*Math.cos(ap - af));
+
+        double phi_p = Math.acos((dgf*dgf + dgp*dgp - dfp*dfp) / (2*dgf*dgp));
+
+        return dgp * Math.sin(phi_p);
+    }
+
+    private PlayerInfo[] getVisibleEnemies() {
+        PlayerInfo [] enemies = m_memory.getAll("player").stream()
+                .map(p -> (PlayerInfo) p)
+                .filter(p -> !p.m_teamName.equals(m_team) && !p.m_goalie)
+                .toArray(PlayerInfo[]::new);
+
+        for(var enemy : enemies) {
+            System.out.println("############ Enemy : " + enemy.m_teamName);
+        }
+
+
+        return enemies;
     }
 
 
