@@ -36,6 +36,10 @@ class Memory {
         return null;
     }
 
+    public ObjectInfo[] getAllObjects() {
+        return m_info.m_objects.toArray(ObjectInfo[]::new);
+    }
+
     //---------------------------------------------------------------------------
     // This function looks for a list of the specified object
     public ArrayList<ObjectInfo> getAll(String name) {
