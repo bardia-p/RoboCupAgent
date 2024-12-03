@@ -52,6 +52,7 @@ class Brain extends AgArch implements Runnable, SensorInput {
     public static final int KICK_POWER = 100;
     public static final double DASH_COEFFICIENT = 10.0;
     public static final double PASS_COEFFICIENT = 25.0;
+    public static final double SLOWING_FACTOR = 0.4;
     public static final double GOALIE_DASH_POWER = 300.0;
     public static final double GOALIE_DASH_ALIGNMENT_POWER = 100.0;
     public static final int SMALL_BROWSE_ANGLE = 40;
@@ -81,8 +82,8 @@ class Brain extends AgArch implements Runnable, SensorInput {
     public static final Double SMALL_ZONE_FRACTION = 0.35;
     public static final Double LARGE_ZONE_FRACTION = 0.45;
     //Offense custom zones
-    public static final Double OFF_SMALL_ZONE_FRACTION = 0.45;
-    public static final Double OFF_LARGE_ZONE_FRACTION = 0.2;
+    public static final Double OFF_SMALL_ZONE_FRACTION = 0.5;
+    public static final Double OFF_LARGE_ZONE_FRACTION = 0.3;
 
     //---------------------------------------------------------------------------
     // This constructor:
@@ -489,6 +490,7 @@ class Brain extends AgArch implements Runnable, SensorInput {
             case "align_centre_act" -> m_agent.turn(centreOfMap.getDirection());
             case "run_to_ball_goalie_act" -> m_agent.dash(GOALIE_DASH_POWER);
             case "run_to_ball_act" -> m_agent.dash(ball.m_distance * DASH_COEFFICIENT);
+            case "slow_run_to_ball_act" -> m_agent.dash(ball.m_distance * DASH_COEFFICIENT * SLOWING_FACTOR);
             case "run_towards_designated_flag_act", "run_to_right_goal_goalie_act", "run_to_left_goal_goalie_act",
                     "run_to_own_goal_goalie_act", "run_to_centre_goalie_act", "run_to_centre_act" ->
                     m_agent.dash(GOALIE_DASH_ALIGNMENT_POWER);

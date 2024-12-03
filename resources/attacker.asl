@@ -42,9 +42,10 @@
     not(goalie_has_ball) &
     ball_in_view &
     aligned_with_ball &
-    not(ball_kickable)
+    not(ball_kickable) &
+    ball_offside
     <-
-    align_ball_act; !wait.
+    slow_run_to_ball_act; !wait.
 
 +!wait:
     not(in_home_zone) &
