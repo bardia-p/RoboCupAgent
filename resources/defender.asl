@@ -59,9 +59,9 @@
     ball_in_view &
     ball_kickable &
     not(opp_goal_in_view) &
-    teammate_in_view
+    attacker_teammate_in_view
     <-
-    pass_to_teammate_act; !wait.
+    pass_to_attacker_teammate_act; !wait.
 
 +!wait:
     not(~in_home_zone) &
@@ -69,9 +69,9 @@
     ball_in_view &
     ball_kickable &
     not(opp_goal_in_view) &
-    not(teammate_in_view)
+    not(attacker_teammate_in_view)
     <-
-    find_teammate_act; !wait.
+    find_attacker_teammate_act; !wait.
 
 +!run_to_home_zone:
     not(in_home_zone) &

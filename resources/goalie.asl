@@ -73,14 +73,12 @@ in_centre_position.
     not(ball_distance_catchable) |
     not(ball_in_view)
     <-
-    !reset_centre;
-    !wait.
+    !reset_centre.
 
 +!offensive_mode:
     caught_ball
     <-
-    kick_random_act;
-    !offensive_mode.
+    !kick_to_teammate_setup.
 
 +!offensive_mode:
     ball_kickable &
@@ -254,8 +252,7 @@ in_centre_position.
     !find_own_goal.
 
 +!run_to_own_goal:
-    not(inside_own_goal) &
-    own_goal_in_view
+    not(inside_own_goal)
     <-
     run_to_own_goal_goalie_act;
     !run_to_own_goal.
@@ -292,3 +289,62 @@ in_centre_position.
     -in_very_left_position;
     +in_centre_position;
     !wait.
+
++!kick_to_teammate_setup:
+    not(centre_visible)
+    <-
+    find_centre_act;
+    !kick_to_teammate_setup.
+
++!kick_to_teammate_setup:
+    centre_visible
+    <-
+    align_centre_act;
+    !kick_to_teammate.
+
++!kick_to_teammate:
+    attacker_teammate_in_view &
+    not(opponent_in_the_way_of_attacker_teammate)
+    <-
+    !kick_to_teammate_attacker.
+
++!kick_to_teammate:
+    defender_teammate_in_view &
+    not(opponent_in_the_way_of_defender_teammate)
+    <-
+    !kick_to_teammate_defender.
+
++!kick_to_teammate:
+    not ( attacker_teammate_in_view &
+    not(opponent_in_the_way_of_attacker_teammate) ) &
+    not ( defender_teammate_in_view &
+    not(opponent_in_the_way_of_defender_teammate) )
+    <-
+    !kick_to_corner_flag.
+
++!kick_to_teammate_defender:
+    not(defender_teammate_in_view)
+    <-
+    !kick_to_teammate_setup.
+
++!kick_to_teammate_defender:
+    defender_teammate_in_view
+    <-
+    pass_to_defender_teammate_act;
+    !offensive_mode.
+
++!kick_to_teammate_attacker:
+    not(attacker_teammate_in_view)
+    <-
+    !kick_to_teammate_setup.
+
++!kick_to_teammate_attacker:
+    attacker_teammate_in_view
+    <-
+    pass_to_attacker_teammate_act;
+    !offensive_mode.
+
++!kick_to_corner_flag
+    <-
+    pass_random_act;
+    !offensive_mode.

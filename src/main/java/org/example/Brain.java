@@ -67,7 +67,7 @@ class Brain extends AgArch implements Runnable, SensorInput {
     public static final double GOALIE_BALL_CATCHABLE_DISTANCE = 10;
     public static final double GOALIE_DISTANCE_EDGE_OF_GOAL = 37.5;
     public static final double GOALIE_DISTANCE_VERY_EDGE_OF_GOAL = 36;
-    public static final double GOALIE_DISTANCE_FROM_CENTRE = 50;
+    public static final double GOALIE_DISTANCE_FROM_CENTRE = 50.5; // Adjust to 50 if needed
     public static final double DEFENDER_DISTANCE_FROM_CENTRE = 30;
     public static final double DEFENDER_DISTANCE_FROM_GOALIE = 10;
     public static final Double FIELD_LENGTH = 105.0;
@@ -75,6 +75,8 @@ class Brain extends AgArch implements Runnable, SensorInput {
     public static final int ATTACKER_MIN_NUMBER = 4;
     public static final int DEFENDER_MIN_NUMBER = 2;
     public static final int PLAYER_ANGLE_RELATIVE_TO_GOAL = 30;
+    public static final int PLAYER_IN_THE_WAY_ANGLE = 5;
+
 
     // These determine what fraction of the half field is used to measure the home zone.
     public static final Double HOME_ZONE_FRACTION = 1.0 / 3.0;
@@ -167,6 +169,13 @@ class Brain extends AgArch implements Runnable, SensorInput {
                 getTS().getLogger().info("Reasoning....");
                 getTS().reasoningCycle();
 
+//                try {
+//                    Thread.sleep(2000);
+//                }
+//                catch(Exception e) {
+//                    System.out.println("ouch");
+//                }
+
                 if (canSleep()) {
                     getTS().getLogger().info("Agent sleep");
                     actionPerformed = false;
@@ -194,7 +203,8 @@ class Brain extends AgArch implements Runnable, SensorInput {
         BallInfo ball = getBall();
         GoalInfo oppGoal = getOpponentGoal();
         GoalInfo ownGoal = getOwnGoal();
-        PlayerInfo teammate = getNearestAttacker();
+        PlayerInfo attackerTeammate = getNearestAttacker();
+        PlayerInfo defenderTeammate = getFurthestDefender();
         FlagInfo centreOfMap = getFlag("c 0");
         int playerZone = getPlayerZone();
 
@@ -330,8 +340,21 @@ class Brain extends AgArch implements Runnable, SensorInput {
             }
         }
 
-        if (teammate != null) {
-            l.add(Literal.parseLiteral("teammate_in_view"));
+        if (attackerTeammate != null) {
+            l.add(Literal.parseLiteral("attacker_teammate_in_view"));
+            if ( isOpponentInDirectionOfPlayer(attackerTeammate) )
+            {
+                l.add(Literal.parseLiteral("opponent_in_the_way_of_attacker_teammate"));
+            }
+        }
+
+        if (defenderTeammate != null) {
+            l.add(Literal.parseLiteral("defender_teammate_in_view"));
+
+            if ( isOpponentInDirectionOfPlayer(defenderTeammate) )
+            {
+                l.add(Literal.parseLiteral("opponent_in_the_way_of_defender_teammate"));
+            }
         }
 
         //Goalie: Check if caught ball
@@ -354,7 +377,8 @@ class Brain extends AgArch implements Runnable, SensorInput {
         BallInfo ball = getBall();
         GoalInfo oppGoal = getOpponentGoal();
         GoalInfo ownGoal = getOwnGoal();
-        PlayerInfo teammate = getNearestAttacker();
+        PlayerInfo attackerTeammate = getNearestAttacker();
+        PlayerInfo defenderTeammate = getFurthestDefender();
         FlagInfo centreOfMap = getFlag("c 0");
 
         ObjectInfo flagRightToGoal;
@@ -372,7 +396,9 @@ class Brain extends AgArch implements Runnable, SensorInput {
         if (ball == null && (actionToDo.equals("align_ball_act") ||
                 actionToDo.equals("run_to_ball_act") ||
                 actionToDo.equals("kick_to_opp_goal_act") ||
-                actionToDo.equals("pass_to_teammate_act") ||
+                actionToDo.equals("pass_to_attacker_teammate_act") ||
+                actionToDo.equals("pass_to_defender_teammate_act") ||
+                actionToDo.equals("pass_random_act") ||
                 actionToDo.equals("catch_ball_act"))) {
             getTS().getLogger().info("Could not perform ball related action! Missing ball!");
             return;
@@ -389,8 +415,13 @@ class Brain extends AgArch implements Runnable, SensorInput {
             return;
         }
 
-        if (teammate == null && (actionToDo.equals("pass_to_teammate_act"))) {
-            getTS().getLogger().info("Could not perform teammate related action! Missing teammate!");
+        if (attackerTeammate == null && (actionToDo.equals("pass_to_teammate_act"))) {
+            getTS().getLogger().info("Could not perform attacker teammate related action! Missing teammate!");
+            return;
+        }
+
+        if (defenderTeammate == null && (actionToDo.equals("pass_to_defender_act"))) {
+            getTS().getLogger().info("Could not perform defender teammate related action! Missing teammate!");
             return;
         }
 
@@ -411,7 +442,7 @@ class Brain extends AgArch implements Runnable, SensorInput {
 
         switch (actionToDo) {
             case "wait_act" -> m_agent.turn(0);
-            case "find_ball_act", "find_teammate_act", "find_right_goal_act" -> m_agent.turn(SMALL_BROWSE_ANGLE);
+            case "find_ball_act", "find_attacker_teammate_act", "find_right_goal_act" -> m_agent.turn(SMALL_BROWSE_ANGLE);
             case "find_left_goal_act" -> m_agent.turn(-SMALL_BROWSE_ANGLE);
             case "find_own_goal_act", "find_centre_act", "find_designated_flag_act" -> m_agent.turn(LARGE_BROWSE_ANGLE);
             case "align_ball_act" -> m_agent.turn(ball.m_direction);
@@ -429,8 +460,9 @@ class Brain extends AgArch implements Runnable, SensorInput {
             case "run_backwards_right_goal_goalie_act", "run_backwards_left_goal_goalie_act" ->
                     m_agent.dash(-GOALIE_DASH_ALIGNMENT_POWER);
             case "kick_to_opp_goal_act" -> m_agent.kick(KICK_POWER, oppGoal.m_direction);
-            case "kick_random_act" -> m_agent.kick(KICK_POWER, 20);
-            case "pass_to_teammate_act" -> m_agent.kick(PASS_COEFFICIENT * teammate.m_distance, teammate.m_direction);
+            case "pass_random_act" -> m_agent.kick(KICK_POWER, 45);
+            case "pass_to_attacker_teammate_act" -> m_agent.kick(PASS_COEFFICIENT * attackerTeammate.m_distance, attackerTeammate.m_direction);
+            case "pass_to_defender_teammate_act" -> m_agent.kick(PASS_COEFFICIENT * defenderTeammate.m_distance, defenderTeammate.m_direction);
             case "catch_ball_act" -> m_agent.catchBall(ball.getDirection());
             default -> getTS().getLogger().warning("INVALID ACTION");
         }
@@ -524,6 +556,32 @@ class Brain extends AgArch implements Runnable, SensorInput {
                 .min(Comparator.comparingDouble(p -> p.m_distance));
 
         return attacker.orElse(null);
+    }
+
+    private PlayerInfo getFurthestDefender() {
+        Optional<PlayerInfo> defender = m_memory.getAll("player").stream()
+                .map(p -> (PlayerInfo) p)
+                .filter(p -> p.m_teamName.equals(m_team) && !p.m_goalie && p.m_uniformName >= DEFENDER_MIN_NUMBER && p.m_uniformName < ATTACKER_MIN_NUMBER )
+                .max(Comparator.comparingDouble(p -> p.m_distance));
+
+        return defender.orElse(null);
+    }
+
+    public boolean isOpponentInDirectionOfPlayer( PlayerInfo player )
+    {
+        boolean inTheWay = false;
+        for ( ObjectInfo p : m_memory.getAll("player") )
+        {
+            if ( !((PlayerInfo) p).m_teamName.equals(m_team) )
+            {
+                if ( Math.abs( p.m_direction - player.m_direction ) <= PLAYER_IN_THE_WAY_ANGLE &&
+                     p.m_distance <= player.m_direction )
+                {
+                    inTheWay = true;
+                }
+            }
+        }
+        return inTheWay;
     }
 
     /**
