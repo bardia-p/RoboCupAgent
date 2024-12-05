@@ -80,10 +80,10 @@ class Brain extends AgArch implements Runnable, SensorInput {
     public static final int PLAYER_IN_THE_WAY_ANGLE = 5;
 
     // These determine what fraction of the half field is used to measure the home zone.
-    public static final Double DEFENDER_HOME_ZONE_FRACTION = 0.4;
+    public static final Double DEFENDER_HOME_ZONE_FRACTION = 0.55;
     public static final Double DEFENDER_OPP_ZONE_FRACTION = 0.45;
-    public static final Double ATTACKER_HOME_ZONE_FRACTION = 0.5;
-    public static final Double ATTACKER_OPP_ZONE_FRACTION = 0.45;
+    public static final Double ATTACKER_HOME_ZONE_FRACTION = 0.45;
+    public static final Double ATTACKER_OPP_ZONE_FRACTION = 0.55;
 
     //---------------------------------------------------------------------------
     // This constructor:
@@ -160,10 +160,8 @@ class Brain extends AgArch implements Runnable, SensorInput {
         if (Pattern.matches("^before_kick_off.*", m_playMode)) {
             switch (m_playerType) {
                 case GOALIE -> m_agent.move(-(FIELD_LENGTH - 5) / 2, 0);
-                case DEFENDER ->
-                        m_agent.move(-Math.random() * FIELD_LENGTH / 4 - FIELD_LENGTH/4, FIELD_WIDTH / 4 - Math.random() * FIELD_WIDTH / 2);
-                case ATTACKER ->
-                        m_agent.move(-Math.random() * FIELD_LENGTH / 4, FIELD_WIDTH / 4 - Math.random() * FIELD_WIDTH / 2);
+                case DEFENDER -> m_agent.move(-FIELD_LENGTH / 4, FIELD_WIDTH / 16 * Math.pow(-1, m_number % 2));
+                case ATTACKER -> m_agent.move(- FIELD_LENGTH / 8, FIELD_WIDTH / 8 * Math.pow(-1, m_number % 2));
             }
         }
 
