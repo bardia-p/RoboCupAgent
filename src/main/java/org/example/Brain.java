@@ -79,11 +79,10 @@ class Brain extends AgArch implements Runnable, SensorInput {
     public static final int PLAYER_IN_THE_WAY_ANGLE = 5;
 
     // These determine what fraction of the half field is used to measure the home zone.
-    public static final Double SMALL_ZONE_FRACTION = 0.35;
-    public static final Double LARGE_ZONE_FRACTION = 0.45;
-    //Offense custom zones
-    public static final Double OFF_SMALL_ZONE_FRACTION = 0.5;
-    public static final Double OFF_LARGE_ZONE_FRACTION = 0.3;
+    public static final Double DEFENDER_HOME_ZONE_FRACTION = 0.4;
+    public static final Double DEFENDER_OPP_ZONE_FRACTION = 0.45;
+    public static final Double ATTACKER_HOME_ZONE_FRACTION = 0.5;
+    public static final Double ATTACKER_OPP_ZONE_FRACTION = 0.45;
 
     //---------------------------------------------------------------------------
     // This constructor:
@@ -171,13 +170,6 @@ class Brain extends AgArch implements Runnable, SensorInput {
                 // calls the Jason engine to perform one reasoning cycle
                 getTS().getLogger().info("Reasoning....");
                 getTS().reasoningCycle();
-
-//                try {
-//                    Thread.sleep(2000);
-//                }
-//                catch(Exception e) {
-//                    System.out.println("ouch");
-//                }
 
                 if (canSleep()) {
                     getTS().getLogger().info("Agent sleep");
@@ -384,8 +376,6 @@ class Brain extends AgArch implements Runnable, SensorInput {
 
 
             if(post != null && enemies.length > 0) {
-                System.out.println("########## Post: " + post.m_direction + ", Goal: " + oppGoal.m_direction + ", Ball: " + ball.m_direction + ", Enemies: " + enemies.length);
-
                 if(IsOffside(ball, enemies, post, oppGoal)) {
                     l.add(Literal.parseLiteral("ball_offside"));
                 }
@@ -431,7 +421,8 @@ class Brain extends AgArch implements Runnable, SensorInput {
                 actionToDo.equals("pass_to_attacker_teammate_act") ||
                 actionToDo.equals("pass_to_defender_teammate_act") ||
                 actionToDo.equals("pass_random_act") ||
-                actionToDo.equals("catch_ball_act"))) {
+                actionToDo.equals("catch_ball_act") ||
+                actionToDo.equals("slow_run_to_ball_act"))) {
             getTS().getLogger().info("Could not perform ball related action! Missing ball!");
             return;
         }
@@ -595,6 +586,10 @@ class Brain extends AgArch implements Runnable, SensorInput {
         return attacker.orElse(null);
     }
 
+    /**
+     * Gets the further defender from the current player.
+     * @return the player info of the furthest defender from the current player.
+     */
     private PlayerInfo getFurthestDefender() {
         Optional<PlayerInfo> defender = m_memory.getAll("player").stream()
                 .map(p -> (PlayerInfo) p)
@@ -604,16 +599,18 @@ class Brain extends AgArch implements Runnable, SensorInput {
         return defender.orElse(null);
     }
 
-    public boolean isOpponentInDirectionOfPlayer( PlayerInfo player )
-    {
+    /**
+     * Returns whether the opponent is in the direction of player.
+     *
+     * @param player the player to see if it has an opponent against it or not.
+     * @return true if there is an opponent in direction of the current player.
+     */
+    public boolean isOpponentInDirectionOfPlayer(PlayerInfo player) {
         boolean inTheWay = false;
-        for ( ObjectInfo p : m_memory.getAll("player") )
-        {
-            if ( !((PlayerInfo) p).m_teamName.equals(m_team) )
-            {
-                if ( Math.abs( p.m_direction - player.m_direction ) <= PLAYER_IN_THE_WAY_ANGLE &&
-                     p.m_distance <= player.m_direction )
-                {
+        for (ObjectInfo p : m_memory.getAll("player")) {
+            if (!((PlayerInfo) p).m_teamName.equals(m_team)) {
+                if (Math.abs(p.m_direction - player.m_direction ) <= PLAYER_IN_THE_WAY_ANGLE &&
+                     p.m_distance <= player.m_direction) {
                     inTheWay = true;
                 }
             }
@@ -641,13 +638,13 @@ class Brain extends AgArch implements Runnable, SensorInput {
         GoalInfo goal_opp = (GoalInfo) m_memory.getObject("goal " + opp_side);
         FlagInfo bottom_opp = getFlag(opp_side + " b");
 
-        Double homeZoneFraction = SMALL_ZONE_FRACTION;
-        Double opponentZoneFraction = LARGE_ZONE_FRACTION;
+        Double homeZoneFraction = DEFENDER_HOME_ZONE_FRACTION;
+        Double opponentZoneFraction = DEFENDER_OPP_ZONE_FRACTION;
 
 
         if (m_playerType == RoboCupAgent.PlayerType.ATTACKER) {
-            homeZoneFraction = OFF_LARGE_ZONE_FRACTION;
-            opponentZoneFraction = OFF_SMALL_ZONE_FRACTION;
+            homeZoneFraction = ATTACKER_HOME_ZONE_FRACTION;
+            opponentZoneFraction = ATTACKER_OPP_ZONE_FRACTION;
         }
 
         // If you can see home, and you are close to it!
@@ -699,26 +696,33 @@ class Brain extends AgArch implements Runnable, SensorInput {
 
 
     /**
-     * Checks whether the ball is behind the enemy line or not (ie. behind the furthest back enemy player not including the goalie)
+     * Checks whether the ball is behind the enemy line or not
+     * (ie. behind the furthest back enemy player not including the goalie)
      *
      * @return Offside status condition
      */
     private boolean IsOffside(ObjectInfo ball, PlayerInfo[] enemies, FlagInfo flag, GoalInfo goal) {
         double d_ball =  GetDistanceFromOppLine(ball, flag, goal);
 
-        double d = -1.0;
+        double d;
         for (PlayerInfo enemy : enemies) {
             d = GetDistanceFromOppLine(enemy, flag, goal);
             if (d < d_ball) {
-
                 return false;
             }
         }
 
-        System.out.println("##### OFFSIDE ####### Enemy distance: " + d + ", Ball distance: " + d_ball);
         return true;
     }
 
+    /**
+     * Returns the distance of the given object from the opposition line.
+     *
+     * @param obj the object to get the distance from
+     * @param post the flag post
+     * @param goal the goal
+     * @return the distance of the object to the opposition.
+     */
     private double GetDistanceFromOppLine(ObjectInfo obj, FlagInfo post, GoalInfo goal) {
         double dp = obj.m_distance;
         double ap = Math.toRadians(Math.abs(goal.m_direction - obj.m_direction));
@@ -735,18 +739,15 @@ class Brain extends AgArch implements Runnable, SensorInput {
         return dgp * Math.sin(phi_p);
     }
 
+    /**
+     * Returns a list of visible enemies
+     * @return an array of visible enemies
+     */
     private PlayerInfo[] getVisibleEnemies() {
-        PlayerInfo [] enemies = m_memory.getAll("player").stream()
+        return m_memory.getAll("player").stream()
                 .map(p -> (PlayerInfo) p)
                 .filter(p -> !p.m_teamName.equals(m_team) && !p.m_goalie)
                 .toArray(PlayerInfo[]::new);
-
-        /* LOGGING
-        for(var enemy : enemies) {
-            System.out.println("############ Enemy : " + enemy.m_teamName);
-        } */
-
-        return enemies;
     }
 
 

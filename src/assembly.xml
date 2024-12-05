@@ -43,6 +43,8 @@
             <includes>
                 <include>TeamStart.sh</include>
                 <include>TeamStart.bat</include>
+                <include>HalfTeamStart.bat</include>
+                <include>HalfTeamStart.sh</include>
             </includes>
         </fileSet>
     </fileSets>
