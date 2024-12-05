@@ -291,6 +291,11 @@ in_centre_position.
     !wait.
 
 +!kick_to_teammate_setup:
+    not(caught_ball)
+    <-
+    !offensive_mode.
+
++!kick_to_teammate_setup:
     not(centre_visible)
     <-
     find_centre_act;
