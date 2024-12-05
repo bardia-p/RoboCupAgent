@@ -81,8 +81,8 @@ class Brain extends AgArch implements Runnable, SensorInput {
 
     // These determine what fraction of the half field is used to measure the home zone.
     public static final Double DEFENDER_HOME_ZONE_FRACTION = 0.55;
-    public static final Double DEFENDER_OPP_ZONE_FRACTION = 0.45;
-    public static final Double ATTACKER_HOME_ZONE_FRACTION = 0.45;
+    public static final Double DEFENDER_OPP_ZONE_FRACTION = 0.40;
+    public static final Double ATTACKER_HOME_ZONE_FRACTION = 0.40;
     public static final Double ATTACKER_OPP_ZONE_FRACTION = 0.55;
 
     //---------------------------------------------------------------------------
