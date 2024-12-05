@@ -36,7 +36,8 @@ class Brain extends AgArch implements Runnable, SensorInput {
     private final RoboCupAgent.PlayerType m_playerType;
     private final char m_side;
     private final int m_number;
-    private String m_caught;
+    private boolean m_caught;
+    private String m_caughtValue;
     private volatile boolean m_timeOver;
     private final String m_playMode;
 
@@ -102,7 +103,8 @@ class Brain extends AgArch implements Runnable, SensorInput {
         m_side = side;
         m_number = number;
         m_playMode = playMode;
-        m_caught = "0";
+        m_caught = false;
+        m_caughtValue = "0";
         actionPerformed = false;
 
         new RunLocalMAS().setupLogger(LOGGING_FILE);
@@ -363,9 +365,15 @@ class Brain extends AgArch implements Runnable, SensorInput {
         }
 
         //Goalie: Check if caught ball
-        if ( m_caught.equals("1") )
+        if ( m_caught )
         {
             l.add(Literal.parseLiteral("caught_ball"));
+        }
+
+        // Goalie: A small trick to reset whether we have no longer caught the ball
+        if ( this.m_caught && ( null == ball || ball.getDistance() > GOALIE_BALL_CATCHABLE_DISTANCE) )
+        {
+            this.m_caught = false;
         }
 
         //Offense: Offside calculations
@@ -760,7 +768,11 @@ class Brain extends AgArch implements Runnable, SensorInput {
     //---------------------------------------------------------------------------
     // This function receives caught information from player
     public void caughtBall(String caught) {
-        this.m_caught = caught;
+        if ( !caught.equals(m_caughtValue) )
+        {
+            this.m_caught = true;
+            m_caughtValue = caught;
+        }
     }
 
     //---------------------------------------------------------------------------
