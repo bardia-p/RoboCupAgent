@@ -2,7 +2,14 @@
 
 This project demonstrates an implementation of a [JASON](https://jason-lang.github.io/) BDI agent that plays in the [RoboCup 2D Simulator](https://ssim.robocup.org/).
 
-<img src="documents/figures/robocup_example.png">
+<p align="center">
+    <img src="documents/figures/robocup_example.png" height=200>
+</p>
+
+## Contributors
+- [Aron Arany-Takacs](https://github.com/aranyszivu)
+- [Bardia Parmoun](https://github.com/bardia-p)
+- [Dylan Leveille](https://github.com/DylanLeveille)
 
 ## Project Design
 
