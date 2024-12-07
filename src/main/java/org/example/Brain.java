@@ -44,6 +44,8 @@ class Brain extends AgArch implements Runnable, SensorInput {
     private boolean actionPerformed;
     private final Logger logger;
 
+    private long reasoningTime;
+
     // Constants
     public static final String ATTACKER_FILE = "resources/attacker.asl";
     public static final String DEFENDER_FILE = "resources/defender.asl";
@@ -106,6 +108,7 @@ class Brain extends AgArch implements Runnable, SensorInput {
         m_caught = false;
         m_caughtValue = "0";
         actionPerformed = false;
+        reasoningTime = 0;
 
         new RunLocalMAS().setupLogger(LOGGING_FILE);
 
@@ -169,7 +172,10 @@ class Brain extends AgArch implements Runnable, SensorInput {
             while (isRunning()) {
                 // calls the Jason engine to perform one reasoning cycle
                 getTS().getLogger().info("Reasoning....");
+                long startTime = System.currentTimeMillis();
                 getTS().reasoningCycle();
+                long endTime = System.currentTimeMillis();
+                reasoningTime = endTime - startTime;
 
                 if (canSleep()) {
                     getTS().getLogger().info("Agent sleep");
@@ -399,6 +405,11 @@ class Brain extends AgArch implements Runnable, SensorInput {
     public void act(ActionExec action) {
         getTS().getLogger().info("Agent " + getAgName() + " is doing: " + action.getActionTerm());
 
+        // set that the execution was ok
+        actionPerformed = true;
+        action.setResult(true);
+        actionExecuted(action);
+
         String actionToDo = action.getActionTerm().toString();
         BallInfo ball = getBall();
         GoalInfo oppGoal = getOpponentGoal();
@@ -502,11 +513,6 @@ class Brain extends AgArch implements Runnable, SensorInput {
         }
 
         getTS().getLogger().info("Agent " + getAgName() + " finished doing: " + action.getActionTerm());
-
-        // set that the execution was ok
-        actionPerformed = true;
-        action.setResult(true);
-        actionExecuted(action);
     }
 
     @Override
@@ -529,7 +535,7 @@ class Brain extends AgArch implements Runnable, SensorInput {
         // sleep one step to ensure that we will not send
         // two commands in one cycle.
         try {
-            Thread.sleep(2 * SoccerParams.simulator_step);
+            Thread.sleep(2 * SoccerParams.simulator_step - reasoningTime);
         } catch (Exception e) {
             logger.log(Level.SEVERE, "Run error", e);
             throw new RuntimeException(e);
