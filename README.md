@@ -2,11 +2,13 @@
 
 This project demonstrates an implementation of a [JASON](https://jason-lang.github.io/) BDI agent that plays in the [RoboCup 2D Simulator](https://ssim.robocup.org/).
 
+<img src="documents/figures/robocup_example.png">
+
 ## Project Design
 
-Please review the [report](documents/Robocup_Report.pdf) detailing the design of this project.
+Please review our [report](documents/Robocup_Report.pdf) detailing the design of this project.
 
-In addition, you can view our group presenting our design at [presentation](documents/RobocupPresentation.pdf)
+In addition, you can view our group presenting this design by following the [presentation](documents/RobocupPresentation.pdf).
 
 ## Running the Program
 

@@ -2,7 +2,7 @@ setlocal
 
 set "path_1=target\classes;ASL;lib\*"
 set "className_1=org.example.RoboCupAgent"
-set "team_1=Home"
+set "team_1=Champions"
 
 start java -cp "%path_1%" %className_1% -team %team_1% -playerType Goalie
 ping localhost
